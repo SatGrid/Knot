@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+.npm-cache/
 
 # Next.js
 .next/
@@ -28,4 +29,3 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
-
