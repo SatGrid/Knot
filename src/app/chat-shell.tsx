@@ -104,7 +104,10 @@ export function ChatShell({
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div>
               <h1 className="text-lg font-semibold">Knot</h1>
-              <p className="text-[11px] text-stone-400">Tying people together.</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] text-stone-400">Tying people together.</p>
+                <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
+              </div>
             </div>
             <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" type="button">+</button>
           </header>
