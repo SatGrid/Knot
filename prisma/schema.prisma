@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConversationRole {
+  OWNER
+  MEMBER
+}
+
+model User {
+  id           String               @id @default(uuid()) @db.Uuid
+  email        String               @unique
+  username     String               @unique
+  displayName  String
+  passwordHash String?
+  avatarUrl    String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  memberships  ConversationMember[]
+  messages     Message[]
+}
+
+model Conversation {
+  id        String               @id @default(uuid()) @db.Uuid
+  title     String?
+  isGroup   Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  members   ConversationMember[]
+  messages  Message[]
+
+  @@index([updatedAt])
+}
+
+model ConversationMember {
+  conversationId String           @db.Uuid
+  userId         String           @db.Uuid
+  role           ConversationRole @default(MEMBER)
+  joinedAt       DateTime         @default(now())
+  lastReadAt     DateTime?
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  senderId       String       @db.Uuid
+  body           String       @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
