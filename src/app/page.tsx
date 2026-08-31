@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { ChatShell, type ConversationView } from "./chat-shell";
-import { DEMO_USER_ID } from "@/lib/demo-user";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +17,12 @@ function formatTime(date: Date) {
 }
 
 export default async function Home() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+
+  const currentUserId = session.user.id;
   const memberships = await prisma.conversationMember.findMany({
-    where: { userId: DEMO_USER_ID },
+    where: { userId: currentUserId },
     orderBy: { conversation: { updatedAt: "desc" } },
     include: {
       conversation: {
@@ -33,7 +39,7 @@ export default async function Home() {
   });
 
   const conversations: ConversationView[] = memberships.map(({ conversation }) => {
-    const otherMember = conversation.members.find(({ userId }) => userId !== DEMO_USER_ID);
+    const otherMember = conversation.members.find(({ userId }) => userId !== currentUserId);
     const name = conversation.title ?? otherMember?.user.displayName ?? "Conversation";
 
     return {
@@ -44,10 +50,10 @@ export default async function Home() {
       messages: conversation.messages.map((message) => ({
         id: message.id,
         body: message.body,
-        sender: message.senderId === DEMO_USER_ID ? "me" : "them",
+        sender: message.senderId === currentUserId ? "me" : "them",
       })),
     };
   });
 
-  return <ChatShell initialConversations={conversations} />;
+  return <ChatShell currentUserName={session.user.name} initialConversations={conversations} />;
 }

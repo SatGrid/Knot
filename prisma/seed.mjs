@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { hashPassword } from "better-auth/crypto";
 import pg from "pg";
 
 const { Client } = pg;
@@ -14,6 +15,10 @@ async function main() {
   await client.connect();
   await client.query("BEGIN");
 
+  const demoPassword = process.env.DEMO_PASSWORD;
+  if (!demoPassword) throw new Error("DEMO_PASSWORD is required to seed the demo account.");
+  const passwordHash = await hashPassword(demoPassword);
+
   await client.query(
     `INSERT INTO "User" (id, email, username, "displayName", "createdAt", "updatedAt")
      VALUES ($1, 'satyam@knot.local', 'satyam', 'Satyam', NOW(), NOW()),
@@ -24,6 +29,15 @@ async function main() {
          "displayName" = EXCLUDED."displayName",
          "updatedAt" = NOW()`,
     [ids.satyam, ids.maya],
+  );
+
+  await client.query(
+    `INSERT INTO account (id, issuer, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
+     VALUES (gen_random_uuid(), 'local:credential', $1::text, 'credential', $1::uuid, $2, NOW(), NOW())
+     ON CONFLICT (issuer, "accountId") DO UPDATE
+     SET password = EXCLUDED.password,
+         "updatedAt" = NOW()`,
+    [ids.satyam, passwordHash],
   );
 
   await client.query(

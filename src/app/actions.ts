@@ -1,10 +1,14 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { DEMO_USER_ID } from "@/lib/demo-user";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function sendMessage(conversationId: string, formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to send messages.");
+
   const body = String(formData.get("message") ?? "").trim();
 
   if (!body || body.length > 4000) {
@@ -15,7 +19,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     where: {
       conversationId_userId: {
         conversationId,
-        userId: DEMO_USER_ID,
+        userId: session.user.id,
       },
     },
     select: { conversationId: true },
@@ -29,7 +33,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     prisma.message.create({
       data: {
         conversationId,
-        senderId: DEMO_USER_ID,
+        senderId: session.user.id,
         body,
       },
     }),
@@ -41,4 +45,3 @@ export async function sendMessage(conversationId: string, formData: FormData) {
 
   revalidatePath("/");
 }
-

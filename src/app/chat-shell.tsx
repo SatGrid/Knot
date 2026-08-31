@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useOptimistic, useState } from "react";
+import { useRouter } from "next/navigation";
 import { sendMessage } from "./actions";
+import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
   id: string;
@@ -23,7 +25,14 @@ type OptimisticMessage = {
   id: string;
 };
 
-export function ChatShell({ initialConversations }: { initialConversations: ConversationView[] }) {
+export function ChatShell({
+  currentUserName,
+  initialConversations,
+}: {
+  currentUserName: string;
+  initialConversations: ConversationView[];
+}) {
+  const router = useRouter();
   const [activeId, setActiveId] = useState(initialConversations[0]?.id ?? "");
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -68,10 +77,20 @@ export function ChatShell({ initialConversations }: { initialConversations: Conv
     await sendMessage(activeConversation.id, formData);
   }
 
+  async function signOut() {
+    await authClient.signOut();
+    router.push("/sign-in");
+    router.refresh();
+  }
+
   if (!activeConversation) {
     return (
-      <main className="grid h-dvh place-items-center bg-stone-100 text-sm text-stone-500">
-        No conversations yet.
+      <main className="grid h-dvh place-items-center bg-stone-100 px-4 text-stone-900">
+        <section className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-6 text-center">
+          <h1 className="text-lg font-semibold">Knot</h1>
+          <p className="mt-4 text-sm text-stone-500">You don&apos;t have any conversations yet.</p>
+          <button className="mt-5 text-sm font-medium underline underline-offset-2" onClick={signOut} type="button">Sign out</button>
+        </section>
       </main>
     );
   }
@@ -116,8 +135,9 @@ export function ChatShell({ initialConversations }: { initialConversations: Conv
           </nav>
 
           <footer className="flex items-center gap-3 border-t border-stone-200 p-4">
-            <span className="grid size-8 place-items-center rounded-full bg-stone-900 text-xs font-medium text-white">S</span>
-            <span className="text-sm font-medium">Satyam</span>
+            <span className="grid size-8 place-items-center rounded-full bg-stone-900 text-xs font-medium text-white">{currentUserName.charAt(0).toUpperCase()}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{currentUserName}</span>
+            <button className="text-xs text-stone-500 hover:text-stone-900" onClick={signOut} type="button">Sign out</button>
           </footer>
         </aside>
 
