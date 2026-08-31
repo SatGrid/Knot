@@ -117,7 +117,7 @@ export function ChatShell({ initialConversations }: { initialConversations: Conv
 
           <footer className="flex items-center gap-3 border-t border-stone-200 p-4">
             <span className="grid size-8 place-items-center rounded-full bg-stone-900 text-xs font-medium text-white">S</span>
-            <span className="text-sm font-medium">Satya</span>
+            <span className="text-sm font-medium">Satyam</span>
           </footer>
         </aside>
 
