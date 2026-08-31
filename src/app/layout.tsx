@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Knot",
-  description: "Conversations that keep people connected.",
+  description: "Tying people together.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
