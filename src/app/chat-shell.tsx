@@ -37,8 +37,9 @@ export function ChatShell({
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [localConversations, setLocalConversations] = useState(initialConversations);
   const [conversations, addOptimisticMessage] = useOptimistic(
-    initialConversations,
+    localConversations,
     (current, message: OptimisticMessage) =>
       current.map((conversation) =>
         conversation.id === message.conversationId
@@ -60,6 +61,17 @@ export function ChatShell({
   function chooseConversation(id: string) {
     setActiveId(id);
     setSidebarOpen(false);
+  }
+
+  function startConversation() {
+    const name = window.prompt("Who do you want to message?")?.trim();
+    if (!name) return;
+    const id = `local-${Date.now()}`;
+    setLocalConversations((current) => [
+      ...current,
+      { id, name, status: "New conversation", time: "Now", messages: [] },
+    ]);
+    setActiveId(id);
   }
 
   async function submitMessage(formData: FormData) {
@@ -109,7 +121,7 @@ export function ChatShell({
                 <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
               </div>
             </div>
-            <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" type="button">+</button>
+            <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={startConversation} type="button">+</button>
           </header>
 
           <div className="p-3">
