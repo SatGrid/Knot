@@ -38,6 +38,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     router.refresh();
   }
 
+  async function signInWithGoogle() {
+    setError("");
+    await authClient.signIn.social({ provider: "google", callbackURL: "/" });
+  }
+
   return (
     <main className="grid min-h-dvh place-items-center bg-stone-100 px-4 text-stone-900">
       <section className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-6">
@@ -73,6 +78,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           </button>
         </form>
 
+        <>
+          <div className="my-4 flex items-center gap-3 text-xs text-stone-400"><span className="h-px flex-1 bg-stone-200" />or<span className="h-px flex-1 bg-stone-200" /></div>
+          <button className="h-10 w-full rounded-md border border-stone-300 text-sm font-medium hover:bg-stone-50" onClick={signInWithGoogle} type="button">Continue with Google</button>
+        </>
+
         <p className="mt-5 text-center text-sm text-stone-500">
           {isSignUp ? "Already have an account?" : "New to Knot?"}{" "}
           <Link className="font-medium text-stone-900 underline underline-offset-2" href={isSignUp ? "/sign-in" : "/sign-up"}>
@@ -83,4 +93,3 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     </main>
   );
 }
-
