@@ -181,7 +181,14 @@ export function ChatShell({
           </div>
 
           <form action={submitMessage} className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4">
-            <button aria-label="Add attachment" className="grid size-10 shrink-0 place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100" type="button">+</button>
+            <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
+              +
+              <input className="sr-only" onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) setDraft((current) => `${current}${current ? " " : ""}[${file.name}]`);
+                event.target.value = "";
+              }} type="file" />
+            </label>
             <label className="sr-only" htmlFor="message">Message {activeConversation.name}</label>
             <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500" id="message" name="message" onChange={(event) => setDraft(event.target.value)} placeholder="Write a message" required rows={1} value={draft} />
             <button aria-label="Send message" className="grid size-10 shrink-0 place-items-center rounded-lg bg-stone-900 text-lg text-white hover:bg-stone-700 disabled:cursor-default disabled:bg-stone-300" disabled={!draft.trim()} type="submit">→</button>
