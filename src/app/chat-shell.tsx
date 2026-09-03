@@ -114,10 +114,10 @@ export function ChatShell({
 
   return (
     <main className="h-dvh bg-slate-100 p-0 text-slate-900 sm:p-4">
-      <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-stone-300 bg-white sm:grid-cols-[280px_1fr] sm:rounded-lg sm:border">
+      <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:grid-cols-[280px_1fr] sm:rounded-2xl sm:border">
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
-        <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-stone-200 bg-white transition-transform sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-slate-200 bg-slate-50 transition-transform sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div>
               <h1 className="text-lg font-semibold">Knot</h1>
@@ -161,7 +161,7 @@ export function ChatShell({
           </footer>
         </aside>
 
-        <section className="flex min-w-0 flex-col">
+        <section className="flex min-w-0 flex-col bg-white">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4 sm:px-5">
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
