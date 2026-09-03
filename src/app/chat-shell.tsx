@@ -114,6 +114,10 @@ export function ChatShell({
 
   return (
     <main className="h-dvh bg-slate-100 p-0 text-slate-900 sm:p-4">
+      <div className="mx-auto mb-3 flex max-w-6xl items-center justify-between rounded-xl bg-indigo-600 px-4 py-3 text-white shadow-lg">
+        <div><p className="text-sm font-semibold">Knot experimental preview</p><p className="text-xs text-indigo-100">A visible test update for the next release.</p></div>
+        <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] uppercase tracking-wider">Demo</span>
+      </div>
       <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:grid-cols-[280px_1fr] sm:rounded-2xl sm:border">
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
