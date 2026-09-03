@@ -37,6 +37,8 @@ export function ChatShell({
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newConversationOpen, setNewConversationOpen] = useState(false);
+  const [newConversationEmail, setNewConversationEmail] = useState("");
   const [localConversations, setLocalConversations] = useState(initialConversations);
   const [conversations, addOptimisticMessage] = useOptimistic(
     localConversations,
@@ -64,14 +66,16 @@ export function ChatShell({
   }
 
   async function startConversation() {
-    const email = window.prompt("Enter the person’s Knot email address")?.trim();
+    const email = newConversationEmail.trim();
     if (!email) return;
     try {
       const result = await startConversationByEmail(email);
       setLocalConversations((current) => [...current, { id: result.id, name: result.name, status: "Available", time: "Now", messages: [] }]);
       setActiveId(result.id);
+      setNewConversationEmail("");
+      setNewConversationOpen(false);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Could not start conversation.");
+      setNewConversationEmail(email);
     }
   }
 
@@ -122,7 +126,7 @@ export function ChatShell({
                 <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
               </div>
             </div>
-            <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={startConversation} type="button">+</button>
+            <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button>
           </header>
 
           <div className="p-3">
@@ -196,6 +200,7 @@ export function ChatShell({
           </form>
         </section>
       </div>
+      {newConversationOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-black/20 px-4"><form className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-5 shadow-lg" onSubmit={(event) => { event.preventDefault(); void startConversation(); }}><h2 className="text-base font-semibold">New conversation</h2><p className="mt-1 text-sm text-stone-500">Enter the person’s Knot email.</p><input autoFocus className="mt-4 h-10 w-full rounded-md border border-stone-300 px-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setNewConversationEmail(event.target.value)} placeholder="name@example.com" type="email" value={newConversationEmail} /><div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-stone-500" onClick={() => setNewConversationOpen(false)} type="button">Cancel</button><button className="rounded-md bg-stone-900 px-3 py-2 text-sm text-white" type="submit">Start chat</button></div></form></div>}
     </main>
   );
 }
