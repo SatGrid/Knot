@@ -56,3 +56,33 @@ export async function startConversationByEmail(email: string) {
   revalidatePath("/");
   return { id: conversation.id, name: target.displayName };
 }
+
+export async function renameConversation(conversationId: string, title: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to rename a conversation.");
+
+  const cleanTitle = title.trim();
+  if (cleanTitle.length < 1 || cleanTitle.length > 80) {
+    throw new Error("Conversation names must be between 1 and 80 characters.");
+  }
+
+  const membership = await prisma.conversationMember.findUnique({
+    where: {
+      conversationId_userId: {
+        conversationId,
+        userId: session.user.id,
+      },
+    },
+    select: { conversationId: true },
+  });
+
+  if (!membership) throw new Error("You do not have access to this conversation.");
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { title: cleanTitle },
+  });
+
+  revalidatePath("/");
+  return { title: cleanTitle };
+}
