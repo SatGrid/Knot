@@ -2,7 +2,7 @@
 
 import { useMemo, useOptimistic, useState } from "react";
 import { useRouter } from "next/navigation";
-import { sendMessage } from "./actions";
+import { sendMessage, startConversationByEmail } from "./actions";
 import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
@@ -63,15 +63,16 @@ export function ChatShell({
     setSidebarOpen(false);
   }
 
-  function startConversation() {
-    const name = window.prompt("Who do you want to message?")?.trim();
-    if (!name) return;
-    const id = `local-${Date.now()}`;
-    setLocalConversations((current) => [
-      ...current,
-      { id, name, status: "New conversation", time: "Now", messages: [] },
-    ]);
-    setActiveId(id);
+  async function startConversation() {
+    const email = window.prompt("Enter the person’s Knot email address")?.trim();
+    if (!email) return;
+    try {
+      const result = await startConversationByEmail(email);
+      setLocalConversations((current) => [...current, { id: result.id, name: result.name, status: "Available", time: "Now", messages: [] }]);
+      setActiveId(result.id);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Could not start conversation.");
+    }
   }
 
   async function submitMessage(formData: FormData) {
