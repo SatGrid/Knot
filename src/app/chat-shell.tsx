@@ -113,7 +113,7 @@ export function ChatShell({
   }
 
   return (
-    <main className="h-dvh bg-stone-100 p-0 text-stone-900 sm:p-4">
+    <main className="h-dvh bg-slate-100 p-0 text-slate-900 sm:p-4">
       <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-stone-300 bg-white sm:grid-cols-[280px_1fr] sm:rounded-lg sm:border">
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
