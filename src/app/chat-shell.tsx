@@ -39,6 +39,8 @@ export function ChatShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [newConversationEmail, setNewConversationEmail] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [archivedIds, setArchivedIds] = useState<string[]>([]);
   const [localConversations, setLocalConversations] = useState(initialConversations);
   const [conversations, addOptimisticMessage] = useOptimistic(
     localConversations,
@@ -56,8 +58,8 @@ export function ChatShell({
 
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
   const visibleConversations = useMemo(
-    () => conversations.filter(({ name }) => name.toLowerCase().includes(search.toLowerCase())),
-    [conversations, search],
+    () => conversations.filter(({ id, name }) => !archivedIds.includes(id) && name.toLowerCase().includes(search.toLowerCase())),
+    [conversations, search, archivedIds],
   );
 
   function chooseConversation(id: string) {
@@ -171,7 +173,7 @@ export function ChatShell({
                 <p className="text-xs text-stone-500">{activeConversation.status}</p>
               </div>
             </div>
-            <button aria-label="Conversation options" className="px-2 text-xl text-stone-500" type="button">···</button>
+            <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setArchivedIds((ids) => [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">Archive conversation</button></div>}</div>
           </header>
 
           <div aria-live="polite" className="flex flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
