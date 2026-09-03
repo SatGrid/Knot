@@ -41,6 +41,8 @@ export function ChatShell({
   const [newConversationEmail, setNewConversationEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [archivedIds, setArchivedIds] = useState<string[]>([]);
+  const [mutedIds, setMutedIds] = useState<string[]>([]);
+  const [unreadIds, setUnreadIds] = useState<string[]>([]);
   const [localConversations, setLocalConversations] = useState(initialConversations);
   const [conversations, addOptimisticMessage] = useOptimistic(
     localConversations,
@@ -173,7 +175,7 @@ export function ChatShell({
                 <p className="text-xs text-stone-500">{activeConversation.status}</p>
               </div>
             </div>
-            <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setArchivedIds((ids) => [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">Archive conversation</button></div>}</div>
+            <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setUnreadIds((ids) => ids.includes(activeConversation.id) ? ids.filter((id) => id !== activeConversation.id) : [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setMutedIds((ids) => ids.includes(activeConversation.id) ? ids.filter((id) => id !== activeConversation.id) : [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setMenuOpen(false); }} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setArchivedIds((ids) => [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">Archive conversation</button></div>}</div>
           </header>
 
           <div aria-live="polite" className="flex flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
