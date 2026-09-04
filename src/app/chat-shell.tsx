@@ -263,7 +263,7 @@ export function ChatShell({
             </div>
           </div>
 
-          <form action={submitMessage} className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4">
+          <form className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
             <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
               +
               <input className="sr-only" onChange={(event) => {
