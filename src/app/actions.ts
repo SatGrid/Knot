@@ -108,6 +108,26 @@ export async function deleteMessage(messageId: string) {
   await notifyConversationMembers(message.conversationId);
 }
 
+export async function toggleMessageReaction(messageId: string, emoji: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to react to messages.");
+  if (!["👍", "❤️", "😂", "😮", "😢", "🔥"].includes(emoji)) throw new Error("Unsupported reaction.");
+
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, deletedAt: null, conversation: { members: { some: { userId: session.user.id } } } },
+    select: { conversationId: true },
+  });
+  if (!message) throw new Error("This message is unavailable.");
+
+  const key = { messageId_userId_emoji: { messageId, userId: session.user.id, emoji } };
+  const existing = await prisma.messageReaction.findUnique({ where: key, select: { messageId: true } });
+  if (existing) await prisma.messageReaction.delete({ where: key });
+  else await prisma.messageReaction.create({ data: { messageId, userId: session.user.id, emoji } });
+
+  revalidatePath("/");
+  await notifyConversationMembers(message.conversationId);
+}
+
 export async function startConversationByEmail(email: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("You must be signed in to start a conversation.");

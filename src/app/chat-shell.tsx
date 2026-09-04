@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
+import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, toggleMessageReaction, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
@@ -13,6 +13,7 @@ type MessageView = {
   delivery?: "Sent" | "Read";
   edited: boolean;
   replyTo?: { id: string; body: string; sender: string };
+  reactions: { emoji: string; count: number; reacted: boolean }[];
 };
 
 export type ConversationView = {
@@ -29,7 +30,8 @@ export type ConversationView = {
 type OptimisticChange =
   | { type: "add"; conversationId: string; body: string; id: string; replyTo?: MessageView["replyTo"] }
   | { type: "edit"; messageId: string; body: string }
-  | { type: "delete"; messageId: string };
+  | { type: "delete"; messageId: string }
+  | { type: "reaction"; messageId: string; emoji: string };
 
 export function ChatShell({
   currentUserName,
@@ -39,6 +41,7 @@ export function ChatShell({
   initialConversations: ConversationView[];
 }) {
   const router = useRouter();
+  const initialConversationId = useRef(initialConversations[0]?.id ?? "");
   const [activeId, setActiveId] = useState(initialConversations[0]?.id ?? "");
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -62,12 +65,17 @@ export function ChatShell({
   const [editValue, setEditValue] = useState("");
   const [deletingMessage, setDeletingMessage] = useState<MessageView | null>(null);
   const [replyingTo, setReplyingTo] = useState<MessageView | null>(null);
+  const [reactionPickerId, setReactionPickerId] = useState<string | null>(null);
+  const [typingConversationId, setTypingConversationId] = useState<string | null>(null);
+  const [typingName, setTypingName] = useState("");
+  const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remoteTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startMessageTransition] = useTransition();
   const [conversations, applyOptimisticChange] = useOptimistic(
     initialConversations,
     (current, change: OptimisticChange) => current.map((conversation) => {
       if (change.type === "add" && conversation.id === change.conversationId) {
-        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false, replyTo: change.replyTo }] };
+        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false, replyTo: change.replyTo, reactions: [] }] };
       }
       if (change.type === "edit") {
         return { ...conversation, messages: conversation.messages.map((message) => message.id === change.messageId ? { ...message, body: change.body, edited: true } : message) };
@@ -75,19 +83,39 @@ export function ChatShell({
       if (change.type === "delete") {
         return { ...conversation, messages: conversation.messages.filter((message) => message.id !== change.messageId) };
       }
+      if (change.type === "reaction") {
+        return { ...conversation, messages: conversation.messages.map((message) => {
+          if (message.id !== change.messageId) return message;
+          const current = message.reactions.find(({ emoji }) => emoji === change.emoji);
+          if (!current) return { ...message, reactions: [...message.reactions, { emoji: change.emoji, count: 1, reacted: true }] };
+          const nextCount = current.count + (current.reacted ? -1 : 1);
+          return { ...message, reactions: message.reactions.map((reaction) => reaction.emoji === change.emoji ? { ...reaction, count: nextCount, reacted: !reaction.reacted } : reaction).filter(({ count }) => count > 0) };
+        }) };
+      }
       return conversation;
     }),
   );
 
   useEffect(() => {
     const events = new EventSource("/api/events");
-    events.onmessage = () => router.refresh();
+    events.onmessage = (message) => {
+      const event = JSON.parse(message.data) as { type?: string; conversationId: string; userName?: string; isTyping?: boolean };
+      if (event.type === "typing") {
+        if (remoteTypingTimer.current) clearTimeout(remoteTypingTimer.current);
+        setTypingConversationId(event.isTyping ? event.conversationId : null);
+        setTypingName(event.userName ?? "Someone");
+        if (event.isTyping) remoteTypingTimer.current = setTimeout(() => setTypingConversationId(null), 2500);
+        return;
+      }
+      router.refresh();
+    };
     return () => events.close();
   }, [router]);
 
   useEffect(() => {
     const storedDarkMode = window.localStorage.getItem("knot-theme") === "dark";
-    queueMicrotask(() => setDarkMode(storedDarkMode));
+    const storedDraft = window.localStorage.getItem(`knot-draft:${initialConversationId.current}`) ?? "";
+    queueMicrotask(() => { setDarkMode(storedDarkMode); setDraft(storedDraft); });
   }, []);
 
   function toggleTheme() {
@@ -131,6 +159,15 @@ export function ChatShell({
     setMessageSearch("");
     setActiveMatch(0);
     setReplyingTo(null);
+    setDraft(window.localStorage.getItem(`knot-draft:${id}`) ?? "");
+  }
+
+  function updateDraft(value: string) {
+    setDraft(value);
+    window.localStorage.setItem(`knot-draft:${activeConversation.id}`, value);
+    void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: activeConversation.id, isTyping: Boolean(value) }) });
+    if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
+    typingStopTimer.current = setTimeout(() => void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId: activeConversation.id, isTyping: false }) }), 1200);
   }
 
   function highlightedMessage(body: string) {
@@ -164,6 +201,7 @@ export function ChatShell({
     const pendingId = `pending-${Date.now()}`;
     const reply = replyingTo ? { id: replyingTo.id, body: replyingTo.body, sender: replyingTo.sender === "me" ? "You" : activeConversation.name } : undefined;
     setDraft("");
+    window.localStorage.removeItem(`knot-draft:${activeConversation.id}`);
     setReplyingTo(null);
     startMessageTransition(async () => {
       applyOptimisticChange({
@@ -225,6 +263,15 @@ export function ChatShell({
     startMessageTransition(async () => {
       applyOptimisticChange({ type: "delete", messageId });
       await deleteMessage(messageId);
+      router.refresh();
+    });
+  }
+
+  function reactToMessage(messageId: string, emoji: string) {
+    setReactionPickerId(null);
+    startMessageTransition(async () => {
+      applyOptimisticChange({ type: "reaction", messageId, emoji });
+      await toggleMessageReaction(messageId, emoji);
       router.refresh();
     });
   }
@@ -338,9 +385,10 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex rounded-xl transition ${messageMatches[activeMatch] === message.id ? "bg-amber-50/70" : ""} ${message.sender === "me" ? "justify-end" : "justify-start"}`} id={`message-${message.id}`} key={message.id}>
-                  <div className={`group max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`flex items-center gap-2 ${message.sender === "them" ? "flex-row-reverse" : ""}`}><span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => setReplyingTo(message)} type="button">Reply</button>{message.sender === "me" && <><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></>}</span><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.replyTo && <div className={`mb-2 rounded-lg border-l-2 px-2.5 py-1.5 text-xs leading-4 ${message.sender === "me" ? "border-stone-400 bg-black/15 text-stone-200" : "border-stone-300 bg-white/60 text-stone-500"}`}><p className="font-semibold">{message.replyTo.sender}</p><p className="max-w-64 truncate opacity-80">{message.replyTo.body}</p></div>}{highlightedMessage(message.body)}</div></div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
+                  <div className={`group relative max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`flex items-center gap-2 ${message.sender === "them" ? "flex-row-reverse" : ""}`}><span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => setReplyingTo(message)} type="button">Reply</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setReactionPickerId((id) => id === message.id ? null : message.id)} type="button">React</button>{message.sender === "me" && <><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></>}</span><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.replyTo && <div className={`mb-2 rounded-lg border-l-2 px-2.5 py-1.5 text-xs leading-4 ${message.sender === "me" ? "border-stone-400 bg-black/15 text-stone-200" : "border-stone-300 bg-white/60 text-stone-500"}`}><p className="font-semibold">{message.replyTo.sender}</p><p className="max-w-64 truncate opacity-80">{message.replyTo.body}</p></div>}{highlightedMessage(message.body)}</div></div>{reactionPickerId === message.id && <div className={`absolute z-10 mt-1 flex gap-1 rounded-full border border-stone-200 bg-white p-1.5 shadow-lg ${message.sender === "me" ? "right-0" : "left-0"}`}>{["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => <button className="grid size-8 place-items-center rounded-full text-base hover:bg-stone-100" key={emoji} onClick={() => reactToMessage(message.id, emoji)} type="button">{emoji}</button>)}</div>}{message.reactions.length > 0 && <div className={`mt-1 flex flex-wrap gap-1 ${message.sender === "me" ? "justify-end" : "justify-start"}`}>{message.reactions.map((reaction) => <button className={`rounded-full border px-2 py-0.5 text-xs shadow-sm ${reaction.reacted ? "border-stone-400 bg-stone-100" : "border-stone-200 bg-white"}`} key={reaction.emoji} onClick={() => reactToMessage(message.id, reaction.emoji)} type="button">{reaction.emoji} {reaction.count}</button>)}</div>}<p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
+              {typingConversationId === activeConversation.id && <div className="flex items-center gap-2 text-xs text-stone-400"><span className="flex gap-1 rounded-full bg-stone-100 px-3 py-2"><i className="size-1.5 animate-pulse rounded-full bg-stone-400" /><i className="size-1.5 animate-pulse rounded-full bg-stone-400 [animation-delay:150ms]" /><i className="size-1.5 animate-pulse rounded-full bg-stone-400 [animation-delay:300ms]" /></span><span>{typingName} is typing</span></div>}
               <div ref={messageEndRef} />
             </div>
           </div>
@@ -357,7 +405,7 @@ export function ChatShell({
               }} type="file" />
             </label>
             <label className="sr-only" htmlFor="message">Message {activeConversation.name}</label>
-            <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500" id="message" name="message" onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message" required rows={1} value={draft} />
+            <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500" id="message" name="message" onChange={(event) => updateDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message" required rows={1} value={draft} />
             <button aria-label="Send message" className="grid size-10 shrink-0 place-items-center rounded-lg bg-stone-900 text-lg text-white hover:bg-stone-700 disabled:cursor-default disabled:bg-stone-300" disabled={!draft.trim()} type="submit">→</button>
           </form>
         </section>

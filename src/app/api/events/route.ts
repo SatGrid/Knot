@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { subscribeToRealtimeUpdates } from "@/lib/realtime";
+import { publishRealtimeUpdate, subscribeToRealtimeUpdates } from "@/lib/realtime";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -42,4 +43,20 @@ export async function GET(request: Request) {
       "Content-Type": "text/event-stream",
     },
   });
+}
+
+export async function POST(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return new Response("Unauthorized", { status: 401 });
+  const { conversationId, isTyping } = await request.json() as { conversationId?: string; isTyping?: boolean };
+  if (!conversationId) return new Response("Invalid request", { status: 400 });
+  const members = await prisma.conversationMember.findMany({ where: { conversationId }, select: { userId: true } });
+  if (!members.some(({ userId }) => userId === session.user.id)) return new Response("Forbidden", { status: 403 });
+  publishRealtimeUpdate(members.filter(({ userId }) => userId !== session.user.id).map(({ userId }) => userId), {
+    type: "typing",
+    conversationId,
+    userName: session.user.name,
+    isTyping: Boolean(isTyping),
+  });
+  return new Response(null, { status: 204 });
 }

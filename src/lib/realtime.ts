@@ -2,6 +2,9 @@ import { EventEmitter } from "node:events";
 
 type RealtimeEvent = {
   conversationId: string;
+  type?: "update" | "typing";
+  userName?: string;
+  isTyping?: boolean;
 };
 
 const realtimeGlobal = globalThis as typeof globalThis & {
