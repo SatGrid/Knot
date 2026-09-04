@@ -45,6 +45,11 @@ button {
   cursor: pointer;
 }
 
+/* Message actions live in the compact three-dot menu. */
+.group.relative > .flex.items-center > span:first-child {
+  display: none;
+}
+
 .knot-dark {
   color-scheme: dark;
   background: #0d0f12 !important;
