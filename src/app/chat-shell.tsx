@@ -12,6 +12,7 @@ type MessageView = {
   time: string;
   delivery?: "Sent" | "Read";
   edited: boolean;
+  replyTo?: { id: string; body: string; sender: string };
 };
 
 export type ConversationView = {
@@ -26,7 +27,7 @@ export type ConversationView = {
 };
 
 type OptimisticChange =
-  | { type: "add"; conversationId: string; body: string; id: string }
+  | { type: "add"; conversationId: string; body: string; id: string; replyTo?: MessageView["replyTo"] }
   | { type: "edit"; messageId: string; body: string }
   | { type: "delete"; messageId: string };
 
@@ -60,12 +61,13 @@ export function ChatShell({
   const [editingMessage, setEditingMessage] = useState<MessageView | null>(null);
   const [editValue, setEditValue] = useState("");
   const [deletingMessage, setDeletingMessage] = useState<MessageView | null>(null);
+  const [replyingTo, setReplyingTo] = useState<MessageView | null>(null);
   const [, startMessageTransition] = useTransition();
   const [conversations, applyOptimisticChange] = useOptimistic(
     initialConversations,
     (current, change: OptimisticChange) => current.map((conversation) => {
       if (change.type === "add" && conversation.id === change.conversationId) {
-        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false }] };
+        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false, replyTo: change.replyTo }] };
       }
       if (change.type === "edit") {
         return { ...conversation, messages: conversation.messages.map((message) => message.id === change.messageId ? { ...message, body: change.body, edited: true } : message) };
@@ -128,6 +130,7 @@ export function ChatShell({
     setMessageSearchOpen(false);
     setMessageSearch("");
     setActiveMatch(0);
+    setReplyingTo(null);
   }
 
   function highlightedMessage(body: string) {
@@ -159,13 +162,16 @@ export function ChatShell({
     if (!body) return;
 
     const pendingId = `pending-${Date.now()}`;
+    const reply = replyingTo ? { id: replyingTo.id, body: replyingTo.body, sender: replyingTo.sender === "me" ? "You" : activeConversation.name } : undefined;
     setDraft("");
+    setReplyingTo(null);
     startMessageTransition(async () => {
       applyOptimisticChange({
         type: "add",
         conversationId: activeConversation.id,
         body,
         id: pendingId,
+        replyTo: reply,
       });
       try {
         await sendMessage(activeConversation.id, formData);
@@ -332,14 +338,16 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex rounded-xl transition ${messageMatches[activeMatch] === message.id ? "bg-amber-50/70" : ""} ${message.sender === "me" ? "justify-end" : "justify-start"}`} id={`message-${message.id}`} key={message.id}>
-                  <div className={`group max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className="flex items-center gap-2">{message.sender === "me" && <span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></span>}<div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{highlightedMessage(message.body)}</div></div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
+                  <div className={`group max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`flex items-center gap-2 ${message.sender === "them" ? "flex-row-reverse" : ""}`}><span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => setReplyingTo(message)} type="button">Reply</button>{message.sender === "me" && <><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></>}</span><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.replyTo && <div className={`mb-2 rounded-lg border-l-2 px-2.5 py-1.5 text-xs leading-4 ${message.sender === "me" ? "border-stone-400 bg-black/15 text-stone-200" : "border-stone-300 bg-white/60 text-stone-500"}`}><p className="font-semibold">{message.replyTo.sender}</p><p className="max-w-64 truncate opacity-80">{message.replyTo.body}</p></div>}{highlightedMessage(message.body)}</div></div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
               <div ref={messageEndRef} />
             </div>
           </div>
 
+          {replyingTo && <div className="flex shrink-0 items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 sm:px-5"><div className="min-w-0 flex-1 border-l-2 border-stone-400 pl-3"><p className="text-xs font-semibold text-stone-700">Replying to {replyingTo.sender === "me" ? "yourself" : activeConversation.name}</p><p className="truncate text-xs text-stone-500">{replyingTo.body}</p></div><button aria-label="Cancel reply" className="grid size-7 place-items-center rounded-full text-stone-500 hover:bg-stone-200" onClick={() => setReplyingTo(null)} type="button">×</button></div>}
           <form className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
+            {replyingTo && <input name="replyToId" type="hidden" value={replyingTo.id} />}
             <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
               +
               <input className="sr-only" onChange={(event) => {

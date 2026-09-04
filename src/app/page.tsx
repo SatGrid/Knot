@@ -31,7 +31,7 @@ export default async function Home() {
           messages: {
             where: { deletedAt: null },
             orderBy: { createdAt: "asc" },
-            include: { sender: true },
+            include: { sender: true, replyTo: { select: { id: true, body: true, senderId: true, deletedAt: true } } },
           },
         },
       },
@@ -60,6 +60,11 @@ export default async function Home() {
           ? conversation.members.some(({ userId, lastReadAt }) => userId !== currentUserId && lastReadAt && lastReadAt >= message.createdAt) ? "Read" as const : "Sent" as const
           : undefined,
         edited: Boolean(message.editedAt),
+        replyTo: message.replyTo && !message.replyTo.deletedAt ? {
+          id: message.replyTo.id,
+          body: message.replyTo.body,
+          sender: message.replyTo.senderId === currentUserId ? "You" : name,
+        } : undefined,
       })),
     };
   });

@@ -19,6 +19,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   if (!session) throw new Error("You must be signed in to send messages.");
 
   const body = String(formData.get("message") ?? "").trim();
+  const replyToId = String(formData.get("replyToId") ?? "").trim() || null;
 
   if (!body || body.length > 4000) {
     throw new Error("A message must contain between 1 and 4,000 characters.");
@@ -38,12 +39,21 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     throw new Error("You do not have access to this conversation.");
   }
 
+  if (replyToId) {
+    const repliedMessage = await prisma.message.findFirst({
+      where: { id: replyToId, conversationId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!repliedMessage) throw new Error("The message you replied to is no longer available.");
+  }
+
   const message = await prisma.$transaction(async (tx) => {
     const created = await tx.message.create({
       data: {
         conversationId,
         senderId: session.user.id,
         body,
+        replyToId,
       },
     });
     await tx.conversation.update({
