@@ -86,3 +86,30 @@ export async function renameConversation(conversationId: string, title: string) 
   revalidatePath("/");
   return { title: cleanTitle };
 }
+
+export async function updateConversationPreference(
+  conversationId: string,
+  preference: "archived" | "muted" | "unread",
+  enabled: boolean,
+) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to update a conversation.");
+
+  const data = preference === "archived"
+    ? { archivedAt: enabled ? new Date() : null }
+    : preference === "muted"
+      ? { mutedAt: enabled ? new Date() : null }
+      : { lastReadAt: enabled ? null : new Date() };
+
+  await prisma.conversationMember.update({
+    where: {
+      conversationId_userId: {
+        conversationId,
+        userId: session.user.id,
+      },
+    },
+    data,
+  });
+
+  revalidatePath("/");
+}

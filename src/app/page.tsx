@@ -38,7 +38,7 @@ export default async function Home() {
     },
   });
 
-  const conversations: ConversationView[] = memberships.map(({ conversation }) => {
+  const conversations: ConversationView[] = memberships.map(({ conversation, archivedAt, mutedAt, lastReadAt }) => {
     const otherMember = conversation.members.find(({ userId }) => userId !== currentUserId);
     const name = conversation.title ?? otherMember?.user.displayName ?? "Conversation";
 
@@ -47,6 +47,9 @@ export default async function Home() {
       name,
       status: conversation.isGroup ? `${conversation.members.length} members` : "Online",
       time: formatTime(conversation.updatedAt),
+      archived: Boolean(archivedAt),
+      muted: Boolean(mutedAt),
+      unread: lastReadAt === null,
       messages: conversation.messages.map((message) => ({
         id: message.id,
         body: message.body,

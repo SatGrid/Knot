@@ -2,7 +2,7 @@
 
 import { useMemo, useOptimistic, useState } from "react";
 import { useRouter } from "next/navigation";
-import { renameConversation, sendMessage, startConversationByEmail } from "./actions";
+import { renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
@@ -17,6 +17,9 @@ export type ConversationView = {
   status: string;
   time: string;
   messages: MessageView[];
+  archived: boolean;
+  muted: boolean;
+  unread: boolean;
 };
 
 type OptimisticMessage = {
@@ -40,9 +43,10 @@ export function ChatShell({
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [newConversationEmail, setNewConversationEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [archivedIds, setArchivedIds] = useState<string[]>([]);
-  const [mutedIds, setMutedIds] = useState<string[]>([]);
-  const [unreadIds, setUnreadIds] = useState<string[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedIds, setArchivedIds] = useState<string[]>(() => initialConversations.filter(({ archived }) => archived).map(({ id }) => id));
+  const [mutedIds, setMutedIds] = useState<string[]>(() => initialConversations.filter(({ muted }) => muted).map(({ id }) => id));
+  const [unreadIds, setUnreadIds] = useState<string[]>(() => initialConversations.filter(({ unread }) => unread).map(({ id }) => id));
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
@@ -64,8 +68,8 @@ export function ChatShell({
 
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
   const visibleConversations = useMemo(
-    () => conversations.filter(({ id, name }) => !archivedIds.includes(id) && name.toLowerCase().includes(search.toLowerCase())),
-    [conversations, search, archivedIds],
+    () => conversations.filter(({ id, name }) => archivedIds.includes(id) === showArchived && name.toLowerCase().includes(search.toLowerCase())),
+    [conversations, search, archivedIds, showArchived],
   );
 
   function chooseConversation(id: string) {
@@ -78,7 +82,7 @@ export function ChatShell({
     if (!email) return;
     try {
       const result = await startConversationByEmail(email);
-      setLocalConversations((current) => [...current, { id: result.id, name: result.name, status: "Available", time: "Now", messages: [] }]);
+      setLocalConversations((current) => [...current, { id: result.id, name: result.name, status: "Available", time: "Now", messages: [], archived: false, muted: false, unread: false }]);
       setActiveId(result.id);
       setNewConversationEmail("");
       setNewConversationOpen(false);
@@ -126,6 +130,27 @@ export function ChatShell({
     }
   }
 
+  async function toggleUnread() {
+    const enabled = !unreadIds.includes(activeConversation.id);
+    await updateConversationPreference(activeConversation.id, "unread", enabled);
+    setUnreadIds((ids) => enabled ? [...ids, activeConversation.id] : ids.filter((id) => id !== activeConversation.id));
+    setMenuOpen(false);
+  }
+
+  async function toggleMuted() {
+    const enabled = !mutedIds.includes(activeConversation.id);
+    await updateConversationPreference(activeConversation.id, "muted", enabled);
+    setMutedIds((ids) => enabled ? [...ids, activeConversation.id] : ids.filter((id) => id !== activeConversation.id));
+    setMenuOpen(false);
+  }
+
+  async function toggleArchived() {
+    const enabled = !archivedIds.includes(activeConversation.id);
+    await updateConversationPreference(activeConversation.id, "archived", enabled);
+    setArchivedIds((ids) => enabled ? [...ids, activeConversation.id] : ids.filter((id) => id !== activeConversation.id));
+    setMenuOpen(false);
+  }
+
   async function signOut() {
     await authClient.signOut();
     router.push("/sign-in");
@@ -164,6 +189,7 @@ export function ChatShell({
           <div className="p-3">
             <label className="sr-only" htmlFor="conversation-search">Search conversations</label>
             <input className="h-9 w-full rounded-md border border-stone-300 bg-stone-50 px-3 text-sm outline-none placeholder:text-stone-400 focus:border-stone-500" id="conversation-search" onChange={(event) => setSearch(event.target.value)} placeholder="Search" type="search" value={search} />
+            <button className="mt-2 text-xs text-slate-500 hover:text-slate-900" onClick={() => setShowArchived((shown) => !shown)} type="button">{showArchived ? "Back to conversations" : `Archived (${archivedIds.length})`}</button>
           </div>
 
           <nav aria-label="Conversations" className="flex-1 overflow-y-auto px-2">
@@ -203,7 +229,7 @@ export function ChatShell({
                 <p className="text-xs text-stone-500">{activeConversation.status}</p>
               </div>
             </div>
-            <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setUnreadIds((ids) => ids.includes(activeConversation.id) ? ids.filter((id) => id !== activeConversation.id) : [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setMutedIds((ids) => ids.includes(activeConversation.id) ? ids.filter((id) => id !== activeConversation.id) : [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => { setArchivedIds((ids) => [...ids, activeConversation.id]); setMenuOpen(false); }} type="button">Archive conversation</button></div>}</div>
+            <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleUnread()} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleMuted()} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleArchived()} type="button">{archivedIds.includes(activeConversation.id) ? "Unarchive conversation" : "Archive conversation"}</button></div>}</div>
           </header>
 
           <div aria-live="polite" className="flex flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
