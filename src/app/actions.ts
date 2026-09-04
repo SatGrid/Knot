@@ -137,7 +137,7 @@ export async function updateProfile(formData: FormData) {
   const avatarUrl = String(formData.get("avatarUrl") ?? "").trim() || null;
   if (displayName.length < 2 || displayName.length > 50) throw new Error("Name must be between 2 and 50 characters.");
   if (username && !/^[a-z0-9_]{3,20}$/.test(username)) throw new Error("Username must be 3–20 characters using letters, numbers, or underscores.");
-  if (avatarUrl && (!avatarUrl.startsWith("data:image/") || avatarUrl.length > 1_500_000)) throw new Error("Choose an image smaller than 1 MB.");
+  if (avatarUrl && (!avatarUrl.startsWith("data:image/") || avatarUrl.length > 8_000_000)) throw new Error("That photo could not be saved.");
 
   try {
     await prisma.user.update({ where: { id: session.user.id }, data: { displayName, username: username || null, avatarUrl } });
