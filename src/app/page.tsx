@@ -41,6 +41,7 @@ export default async function Home() {
   const conversations: ConversationView[] = memberships.map(({ conversation, archivedAt, mutedAt, lastReadAt }) => {
     const otherMember = conversation.members.find(({ userId }) => userId !== currentUserId);
     const name = conversation.title ?? otherMember?.user.displayName ?? "Conversation";
+    const latestIncomingMessage = conversation.messages.filter(({ senderId }) => senderId !== currentUserId).at(-1);
 
     return {
       id: conversation.id,
@@ -49,7 +50,7 @@ export default async function Home() {
       time: formatTime(conversation.updatedAt),
       archived: Boolean(archivedAt),
       muted: Boolean(mutedAt),
-      unread: lastReadAt === null,
+      unread: Boolean(latestIncomingMessage && (!lastReadAt || latestIncomingMessage.createdAt > lastReadAt)),
       messages: conversation.messages.map((message) => ({
         id: message.id,
         body: message.body,

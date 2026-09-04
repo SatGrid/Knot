@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useOptimistic, useState } from "react";
+import { useEffect, useMemo, useOptimistic, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
@@ -51,7 +51,7 @@ export function ChatShell({
   const [showArchived, setShowArchived] = useState(false);
   const [archivedIds, setArchivedIds] = useState<string[]>(() => initialConversations.filter(({ archived }) => archived).map(({ id }) => id));
   const [mutedIds, setMutedIds] = useState<string[]>(() => initialConversations.filter(({ muted }) => muted).map(({ id }) => id));
-  const [unreadIds, setUnreadIds] = useState<string[]>(() => initialConversations.filter(({ unread }) => unread).map(({ id }) => id));
+  const messageEndRef = useRef<HTMLDivElement>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
@@ -79,10 +79,20 @@ export function ChatShell({
   }, [router]);
 
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
+  const unreadIds = useMemo(() => conversations.filter(({ unread }) => unread).map(({ id }) => id), [conversations]);
   const visibleConversations = useMemo(
     () => conversations.filter(({ id, name }) => archivedIds.includes(id) === showArchived && name.toLowerCase().includes(search.toLowerCase())),
     [conversations, search, archivedIds, showArchived],
   );
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ block: "end" });
+  }, [activeId, activeConversation?.messages.length]);
+
+  useEffect(() => {
+    if (!activeConversation?.unread) return;
+    void updateConversationPreference(activeConversation.id, "unread", false).then(() => router.refresh());
+  }, [activeConversation?.id, activeConversation?.unread, router]);
 
   function chooseConversation(id: string) {
     window.sessionStorage.setItem("knot-active-conversation", id);
@@ -151,10 +161,10 @@ export function ChatShell({
   }
 
   async function toggleUnread() {
-    const enabled = !unreadIds.includes(activeConversation.id);
+    const enabled = !activeConversation.unread;
     await updateConversationPreference(activeConversation.id, "unread", enabled);
-    setUnreadIds((ids) => enabled ? [...ids, activeConversation.id] : ids.filter((id) => id !== activeConversation.id));
     setMenuOpen(false);
+    router.refresh();
   }
 
   async function toggleMuted() {
@@ -222,7 +232,7 @@ export function ChatShell({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className="truncate text-[14px] font-semibold tracking-[-0.005em]">{conversation.name}</span>
-                      <span className="shrink-0 text-xs text-stone-400">{conversation.time}</span>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-stone-400">{mutedIds.includes(conversation.id) && <span className="text-[10px]" title="Muted">Muted</span>}{unreadIds.includes(conversation.id) && <span aria-label="Unread" className="size-2 rounded-full bg-blue-600" title="Unread" />}{conversation.time}</span>
                     </span>
                     <span className="mt-0.5 block truncate text-[13px] leading-5 text-stone-500">{lastMessage}</span>
                   </span>
@@ -260,6 +270,7 @@ export function ChatShell({
                   <div className={`max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
+              <div ref={messageEndRef} />
             </div>
           </div>
 
