@@ -54,6 +54,10 @@ export default async function Home() {
         id: message.id,
         body: message.body,
         sender: message.senderId === currentUserId ? "me" : "them",
+        time: new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(message.createdAt),
+        delivery: message.senderId === currentUserId
+          ? conversation.members.some(({ userId, lastReadAt }) => userId !== currentUserId && lastReadAt && lastReadAt >= message.createdAt) ? "Read" as const : "Sent" as const
+          : undefined,
       })),
     };
   });

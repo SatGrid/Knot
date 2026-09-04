@@ -9,6 +9,8 @@ type MessageView = {
   id: string;
   body: string;
   sender: "me" | "them";
+  time: string;
+  delivery?: "Sent" | "Read";
 };
 
 export type ConversationView = {
@@ -60,7 +62,7 @@ export function ChatShell({
           ? {
               ...conversation,
               time: "Now",
-              messages: [...conversation.messages, { id: message.id, body: message.body, sender: "me" }],
+              messages: [...conversation.messages, { id: message.id, body: message.body, sender: "me", time: "Now", delivery: "Sent" }],
             }
           : conversation,
       ),
@@ -237,7 +239,7 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`} key={message.id}>
-                  <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div>
+                  <div className={`max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
             </div>
