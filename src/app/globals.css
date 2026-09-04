@@ -51,6 +51,10 @@ button {
   color: #f5f5f4 !important;
 }
 
+html.knot-dark body {
+  background: #0d0f12;
+}
+
 .knot-dark .bg-white {
   background-color: #181a1f !important;
 }

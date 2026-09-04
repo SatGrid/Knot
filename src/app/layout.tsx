@@ -8,7 +8,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('knot-theme')==='dark')document.documentElement.classList.add('knot-dark')}catch(e){}` }} /></head>
       <body>{children}</body>
     </html>
   );

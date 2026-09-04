@@ -144,6 +144,11 @@ export async function updateProfile(formData: FormData) {
   } catch {
     throw new Error("That username is already taken.");
   }
+  const contacts = await prisma.conversationMember.findMany({
+    where: { conversation: { members: { some: { userId: session.user.id } } }, userId: { not: session.user.id } },
+    select: { userId: true },
+  });
+  publishRealtimeUpdate([...new Set(contacts.map(({ userId }) => userId))], { conversationId: "profile" });
   revalidatePath("/");
 }
 
