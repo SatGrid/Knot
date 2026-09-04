@@ -10,6 +10,9 @@ out/
 # production
 build/
 
+# local chat attachments
+public/uploads/
+
 # generated database client
 src/generated/prisma/
 
