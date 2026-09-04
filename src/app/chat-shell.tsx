@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useOptimistic, useRef, useState } from "react";
+import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
@@ -58,6 +58,7 @@ export function ChatShell({
   const [editValue, setEditValue] = useState("");
   const [deletingMessage, setDeletingMessage] = useState<MessageView | null>(null);
   const [messageActionPending, setMessageActionPending] = useState(false);
+  const [, startMessageTransition] = useTransition();
   const [conversations, addOptimisticMessage] = useOptimistic(
     initialConversations,
     (current, message: OptimisticMessage) =>
@@ -113,25 +114,27 @@ export function ChatShell({
     }
   }
 
-  async function submitMessage(formData: FormData) {
+  function submitMessage(formData: FormData) {
     if (!activeConversation) return;
 
     const body = String(formData.get("message") ?? "").trim();
     if (!body) return;
 
     const pendingId = `pending-${Date.now()}`;
-    addOptimisticMessage({
-      conversationId: activeConversation.id,
-      body,
-      id: pendingId,
-    });
     setDraft("");
-    try {
-      await sendMessage(activeConversation.id, formData);
-      router.refresh();
-    } catch {
-      setDraft(body);
-    }
+    startMessageTransition(async () => {
+      addOptimisticMessage({
+        conversationId: activeConversation.id,
+        body,
+        id: pendingId,
+      });
+      try {
+        await sendMessage(activeConversation.id, formData);
+        router.refresh();
+      } catch {
+        setDraft(body);
+      }
+    });
   }
 
   function openRenameDialog() {
