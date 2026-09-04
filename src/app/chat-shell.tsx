@@ -86,7 +86,7 @@ export function ChatShell({
       setActiveId(result.id);
       setNewConversationEmail("");
       setNewConversationOpen(false);
-    } catch (error) {
+    } catch {
       setNewConversationEmail(email);
     }
   }
@@ -177,9 +177,9 @@ export function ChatShell({
         <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-slate-200 bg-slate-50 transition-transform sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div>
-              <h1 className="text-lg font-semibold">Knot</h1>
+              <h1 className="text-[17px] font-semibold tracking-[-0.01em]">Knot</h1>
               <div className="flex items-center gap-2">
-                <p className="text-[11px] text-stone-400">Tying people together.</p>
+                <p className="text-[11px] leading-4 text-stone-400">Tying people together.</p>
                 <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
               </div>
             </div>
@@ -201,10 +201,10 @@ export function ChatShell({
                   <span className="grid size-9 shrink-0 place-items-center rounded-full bg-stone-200 text-sm font-medium">{conversation.name.charAt(0)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-medium">{conversation.name}</span>
+                      <span className="truncate text-[14px] font-semibold tracking-[-0.005em]">{conversation.name}</span>
                       <span className="shrink-0 text-xs text-stone-400">{conversation.time}</span>
                     </span>
-                    <span className="mt-0.5 block truncate text-sm text-stone-500">{lastMessage}</span>
+                    <span className="mt-0.5 block truncate text-[13px] leading-5 text-stone-500">{lastMessage}</span>
                   </span>
                 </button>
               );
@@ -225,8 +225,8 @@ export function ChatShell({
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
               <span className="grid size-9 place-items-center rounded-full bg-stone-200 text-sm font-medium">{activeConversation.name.charAt(0)}</span>
               <div>
-                <h2 className="text-sm font-semibold">{activeConversation.name}</h2>
-                <p className="text-xs text-stone-500">{activeConversation.status}</p>
+                <h2 className="text-[15px] font-semibold leading-5 tracking-[-0.005em]">{activeConversation.name}</h2>
+                <p className="text-[12px] leading-4 text-stone-500">{activeConversation.status}</p>
               </div>
             </div>
             <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleUnread()} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleMuted()} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleArchived()} type="button">{archivedIds.includes(activeConversation.id) ? "Unarchive conversation" : "Archive conversation"}</button></div>}</div>
@@ -237,7 +237,7 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`} key={message.id}>
-                  <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-6 ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div>
+                  <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div>
                 </div>
               ))}
             </div>
