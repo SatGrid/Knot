@@ -30,6 +30,7 @@ export default async function Home() {
   if (!session) redirect("/sign-in");
 
   const currentUserId = session.user.id;
+  const blocks = await prisma.userBlock.findMany({ where: { OR: [{ blockerId: currentUserId }, { blockedId: currentUserId }] }, select: { blockerId: true, blockedId: true } });
   const memberships = await prisma.conversationMember.findMany({
     where: { userId: currentUserId },
     orderBy: { conversation: { updatedAt: "desc" } },
@@ -40,7 +41,7 @@ export default async function Home() {
           messages: {
             where: { deletedAt: null },
             orderBy: { createdAt: "asc" },
-            include: { sender: true, reactions: true, replyTo: { select: { id: true, body: true, senderId: true, deletedAt: true } } },
+            include: { sender: true, reactions: true, pins: { where: { userId: currentUserId } }, replyTo: { select: { id: true, body: true, senderId: true, deletedAt: true } } },
           },
         },
       },
@@ -57,6 +58,7 @@ export default async function Home() {
       name,
       status: conversation.isGroup ? `${conversation.members.length} members` : formatPresence(otherMember?.user.lastSeenAt),
       participantId: otherMember?.userId ?? null,
+      blocked: Boolean(otherMember && blocks.some(({ blockerId, blockedId }) => (blockerId === currentUserId && blockedId === otherMember.userId) || (blockedId === currentUserId && blockerId === otherMember.userId))),
       avatarUrl: otherMember?.user.avatarUrl ?? null,
       time: formatTime(conversation.updatedAt),
       archived: Boolean(archivedAt),
@@ -77,6 +79,7 @@ export default async function Home() {
           type: message.attachmentType ?? "application/octet-stream",
           size: message.attachmentSize ?? 0,
         } : undefined,
+        pinned: message.pins.length > 0,
         replyTo: message.replyTo && !message.replyTo.deletedAt ? {
           id: message.replyTo.id,
           body: message.replyTo.body,

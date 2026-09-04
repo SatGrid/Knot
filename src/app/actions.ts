@@ -6,12 +6,12 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeUpdate } from "@/lib/realtime";
 
-async function notifyConversationMembers(conversationId: string) {
+async function notifyConversationMembers(conversationId: string, details?: { senderName?: string; messagePreview?: string }) {
   const members = await prisma.conversationMember.findMany({
     where: { conversationId },
     select: { userId: true },
   });
-  publishRealtimeUpdate(members.map(({ userId }) => userId), { conversationId });
+  publishRealtimeUpdate(members.map(({ userId }) => userId), { conversationId, ...details });
 }
 
 export async function sendMessage(conversationId: string, formData: FormData) {
@@ -44,6 +44,9 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     throw new Error("You do not have access to this conversation.");
   }
 
+  const blocked = await prisma.userBlock.findFirst({ where: { OR: [{ blockerId: session.user.id, blockedId: { in: (await prisma.conversationMember.findMany({ where: { conversationId, userId: { not: session.user.id } }, select: { userId: true } })).map(({ userId }) => userId) } }, { blockedId: session.user.id, blockerId: { in: (await prisma.conversationMember.findMany({ where: { conversationId, userId: { not: session.user.id } }, select: { userId: true } })).map(({ userId }) => userId) } }] } });
+  if (blocked) throw new Error("Messages cannot be sent in this conversation.");
+
   if (replyToId) {
     const repliedMessage = await prisma.message.findFirst({
       where: { id: replyToId, conversationId, deletedAt: null },
@@ -73,7 +76,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   });
 
   revalidatePath("/");
-  await notifyConversationMembers(conversationId);
+  await notifyConversationMembers(conversationId, { senderName: session.user.name, messagePreview: body || attachmentName || "Sent an attachment" });
   return { id: message.id, body: message.body, createdAt: message.createdAt.toISOString() };
 }
 
@@ -158,6 +161,49 @@ export async function updateProfile(formData: FormData) {
     select: { userId: true },
   });
   publishRealtimeUpdate([...new Set(contacts.map(({ userId }) => userId))], { conversationId: "profile" });
+  revalidatePath("/");
+}
+
+export async function toggleMessagePin(messageId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in.");
+  const message = await prisma.message.findFirst({ where: { id: messageId, conversation: { members: { some: { userId: session.user.id } } } }, select: { conversationId: true } });
+  if (!message) throw new Error("Message not found.");
+  const key = { messageId_userId: { messageId, userId: session.user.id } };
+  const existing = await prisma.messagePin.findUnique({ where: key });
+  if (existing) await prisma.messagePin.delete({ where: key });
+  else await prisma.messagePin.create({ data: { messageId, userId: session.user.id } });
+  revalidatePath("/");
+}
+
+export async function forwardMessage(messageId: string, conversationId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in.");
+  const [source, target] = await Promise.all([
+    prisma.message.findFirst({ where: { id: messageId, deletedAt: null, conversation: { members: { some: { userId: session.user.id } } } } }),
+    prisma.conversationMember.findUnique({ where: { conversationId_userId: { conversationId, userId: session.user.id } } }),
+  ]);
+  if (!source || !target) throw new Error("Unable to forward this message.");
+  await prisma.message.create({ data: { conversationId, senderId: session.user.id, body: source.body, attachmentUrl: source.attachmentUrl, attachmentName: source.attachmentName, attachmentType: source.attachmentType, attachmentSize: source.attachmentSize } });
+  await prisma.conversation.update({ where: { id: conversationId }, data: { updatedAt: new Date() } });
+  revalidatePath("/");
+  await notifyConversationMembers(conversationId, { senderName: session.user.name, messagePreview: source.body || source.attachmentName || "Forwarded an attachment" });
+}
+
+export async function toggleBlockUser(userId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || userId === session.user.id) throw new Error("Invalid contact.");
+  const key = { blockerId_blockedId: { blockerId: session.user.id, blockedId: userId } };
+  const existing = await prisma.userBlock.findUnique({ where: key });
+  if (existing) await prisma.userBlock.delete({ where: key });
+  else await prisma.userBlock.create({ data: { blockerId: session.user.id, blockedId: userId } });
+  revalidatePath("/");
+}
+
+export async function removeConversation(conversationId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in.");
+  await prisma.conversationMember.delete({ where: { conversationId_userId: { conversationId, userId: session.user.id } } });
   revalidatePath("/");
 }
 

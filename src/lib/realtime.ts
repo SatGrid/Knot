@@ -7,6 +7,8 @@ type RealtimeEvent = {
   userId?: string;
   isTyping?: boolean;
   isOnline?: boolean;
+  senderName?: string;
+  messagePreview?: string;
 };
 
 const realtimeGlobal = globalThis as typeof globalThis & {
