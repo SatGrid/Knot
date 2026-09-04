@@ -59,6 +59,7 @@ export default async function Home() {
         delivery: message.senderId === currentUserId
           ? conversation.members.some(({ userId, lastReadAt }) => userId !== currentUserId && lastReadAt && lastReadAt >= message.createdAt) ? "Read" as const : "Sent" as const
           : undefined,
+        edited: Boolean(message.editedAt),
       })),
     };
   });

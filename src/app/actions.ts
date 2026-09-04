@@ -58,6 +58,46 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   return { id: message.id, body: message.body, createdAt: message.createdAt.toISOString() };
 }
 
+export async function editMessage(messageId: string, body: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to edit messages.");
+  const cleanBody = body.trim();
+  if (!cleanBody || cleanBody.length > 4000) throw new Error("A message must contain between 1 and 4,000 characters.");
+
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: { senderId: true, conversationId: true, deletedAt: true },
+  });
+  if (!message || message.deletedAt) throw new Error("This message no longer exists.");
+  if (message.senderId !== session.user.id) throw new Error("You can only edit your own messages.");
+
+  await prisma.message.update({
+    where: { id: messageId },
+    data: { body: cleanBody, editedAt: new Date() },
+  });
+  revalidatePath("/");
+  await notifyConversationMembers(message.conversationId);
+}
+
+export async function deleteMessage(messageId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to delete messages.");
+
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: { senderId: true, conversationId: true, deletedAt: true },
+  });
+  if (!message || message.deletedAt) throw new Error("This message no longer exists.");
+  if (message.senderId !== session.user.id) throw new Error("You can only delete your own messages.");
+
+  await prisma.message.update({
+    where: { id: messageId },
+    data: { deletedAt: new Date() },
+  });
+  revalidatePath("/");
+  await notifyConversationMembers(message.conversationId);
+}
+
 export async function startConversationByEmail(email: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("You must be signed in to start a conversation.");

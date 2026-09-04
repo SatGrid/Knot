@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useOptimistic, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
+import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
@@ -11,6 +11,7 @@ type MessageView = {
   sender: "me" | "them";
   time: string;
   delivery?: "Sent" | "Read";
+  edited: boolean;
 };
 
 export type ConversationView = {
@@ -53,6 +54,10 @@ export function ChatShell({
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
   const [renamePending, setRenamePending] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<MessageView | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [deletingMessage, setDeletingMessage] = useState<MessageView | null>(null);
+  const [messageActionPending, setMessageActionPending] = useState(false);
   const [conversations, addOptimisticMessage] = useOptimistic(
     initialConversations,
     (current, message: OptimisticMessage) =>
@@ -61,7 +66,7 @@ export function ChatShell({
           ? {
               ...conversation,
               time: "Now",
-              messages: [...conversation.messages, { id: message.id, body: message.body, sender: "me", time: "Now", delivery: "Sent" }],
+              messages: [...conversation.messages, { id: message.id, body: message.body, sender: "me", time: "Now", delivery: "Sent", edited: false }],
             }
           : conversation,
       ),
@@ -150,6 +155,30 @@ export function ChatShell({
       setRenameError(error instanceof Error ? error.message : "Could not rename this conversation.");
     } finally {
       setRenamePending(false);
+    }
+  }
+
+  async function submitMessageEdit() {
+    if (!editingMessage || !editValue.trim() || messageActionPending) return;
+    setMessageActionPending(true);
+    try {
+      await editMessage(editingMessage.id, editValue);
+      setEditingMessage(null);
+      router.refresh();
+    } finally {
+      setMessageActionPending(false);
+    }
+  }
+
+  async function confirmMessageDelete() {
+    if (!deletingMessage || messageActionPending) return;
+    setMessageActionPending(true);
+    try {
+      await deleteMessage(deletingMessage.id);
+      setDeletingMessage(null);
+      router.refresh();
+    } finally {
+      setMessageActionPending(false);
     }
   }
 
@@ -260,7 +289,7 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex ${message.sender === "me" ? "justify-end" : "justify-start"}`} key={message.id}>
-                  <div className={`max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
+                  <div className={`group max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className="flex items-center gap-2">{message.sender === "me" && <span className="flex gap-1 text-[10px] text-stone-400 sm:invisible sm:group-hover:visible"><button className="hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><button className="hover:text-red-600" onClick={() => setDeletingMessage(message)} type="button">Delete</button></span>}<div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.body}</div></div><p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
               <div ref={messageEndRef} />
@@ -284,6 +313,8 @@ export function ChatShell({
       </div>
       {newConversationOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-black/20 px-4"><form className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-5 shadow-lg" onSubmit={(event) => { event.preventDefault(); void startConversation(); }}><h2 className="text-base font-semibold">New conversation</h2><p className="mt-1 text-sm text-stone-500">Enter the person’s Knot email.</p><input autoFocus className="mt-4 h-10 w-full rounded-md border border-stone-300 px-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setNewConversationEmail(event.target.value)} placeholder="name@example.com" type="email" value={newConversationEmail} /><div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-stone-500" onClick={() => setNewConversationOpen(false)} type="button">Cancel</button><button className="rounded-md bg-stone-900 px-3 py-2 text-sm text-white" type="submit">Start chat</button></div></form></div>}
       {renameOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-black/25 px-4"><form className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl" onSubmit={(event) => { event.preventDefault(); void submitRename(); }}><h2 className="text-base font-semibold">Rename conversation</h2><p className="mt-1 text-sm text-slate-500">Choose a name that will appear for everyone in this chat.</p><input autoFocus className="mt-4 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" maxLength={80} onChange={(event) => setRenameValue(event.target.value)} required value={renameValue} />{renameError && <p className="mt-2 text-sm text-red-600">{renameError}</p>}<div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-slate-500" disabled={renamePending} onClick={() => setRenameOpen(false)} type="button">Cancel</button><button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white disabled:bg-slate-400" disabled={renamePending || !renameValue.trim()} type="submit">{renamePending ? "Saving…" : "Save name"}</button></div></form></div>}
+      {editingMessage && <div className="fixed inset-0 z-30 grid place-items-center bg-black/25 px-4"><form className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl" onSubmit={(event) => { event.preventDefault(); void submitMessageEdit(); }}><h2 className="text-base font-semibold">Edit message</h2><textarea autoFocus className="mt-4 min-h-24 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500" maxLength={4000} onChange={(event) => setEditValue(event.target.value)} required value={editValue} /><div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-slate-500" disabled={messageActionPending} onClick={() => setEditingMessage(null)} type="button">Cancel</button><button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white disabled:bg-slate-400" disabled={messageActionPending || !editValue.trim()} type="submit">{messageActionPending ? "Saving…" : "Save changes"}</button></div></form></div>}
+      {deletingMessage && <div className="fixed inset-0 z-30 grid place-items-center bg-black/25 px-4"><section className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl"><h2 className="text-base font-semibold">Delete message?</h2><p className="mt-2 text-sm text-slate-500">This message will be removed for everyone in the conversation.</p><div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-slate-500" disabled={messageActionPending} onClick={() => setDeletingMessage(null)} type="button">Cancel</button><button className="rounded-md bg-red-600 px-3 py-2 text-sm text-white disabled:bg-red-300" disabled={messageActionPending} onClick={() => void confirmMessageDelete()} type="button">{messageActionPending ? "Deleting…" : "Delete"}</button></div></section></div>}
     </main>
   );
 }
