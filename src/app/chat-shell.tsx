@@ -231,10 +231,10 @@ export function ChatShell({
                   <span className="grid size-9 shrink-0 place-items-center rounded-full bg-stone-200 text-sm font-medium">{conversation.name.charAt(0)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-[14px] font-semibold tracking-[-0.005em]">{conversation.name}</span>
+                      <span className={`truncate text-[14px] tracking-[-0.005em] ${unreadIds.includes(conversation.id) ? "font-bold text-slate-950" : "font-semibold"}`}>{conversation.name}</span>
                       <span className="flex shrink-0 items-center gap-1.5 text-xs text-stone-400">{mutedIds.includes(conversation.id) && <span className="text-[10px]" title="Muted">Muted</span>}{unreadIds.includes(conversation.id) && <span aria-label="Unread" className="size-2 rounded-full bg-blue-600" title="Unread" />}{conversation.time}</span>
                     </span>
-                    <span className="mt-0.5 block truncate text-[13px] leading-5 text-stone-500">{lastMessage}</span>
+                    <span className={`mt-0.5 block truncate text-[13px] leading-5 ${unreadIds.includes(conversation.id) ? "font-semibold text-slate-800" : "font-normal text-stone-500"}`}>{lastMessage}</span>
                   </span>
                 </button>
               );
