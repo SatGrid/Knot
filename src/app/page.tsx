@@ -47,6 +47,7 @@ export default async function Home() {
       id: conversation.id,
       name,
       status: conversation.isGroup ? `${conversation.members.length} members` : "Online",
+      avatarUrl: otherMember?.user.avatarUrl ?? null,
       time: formatTime(conversation.updatedAt),
       archived: Boolean(archivedAt),
       muted: Boolean(mutedAt),
@@ -74,5 +75,6 @@ export default async function Home() {
     };
   });
 
-  return <ChatShell currentUserName={session.user.name} initialConversations={conversations} />;
+  const currentUser = await prisma.user.findUniqueOrThrow({ where: { id: currentUserId }, select: { displayName: true, username: true, avatarUrl: true } });
+  return <ChatShell currentUserAvatar={currentUser.avatarUrl} currentUserName={currentUser.displayName} currentUsername={currentUser.username} initialConversations={conversations} />;
 }

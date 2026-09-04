@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, toggleMessageReaction, updateConversationPreference } from "./actions";
+import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, toggleMessageReaction, updateConversationPreference, updateProfile } from "./actions";
 import { authClient } from "@/lib/auth-client";
 
 type MessageView = {
@@ -25,6 +25,7 @@ export type ConversationView = {
   archived: boolean;
   muted: boolean;
   unread: boolean;
+  avatarUrl: string | null;
 };
 
 type OptimisticChange =
@@ -33,11 +34,19 @@ type OptimisticChange =
   | { type: "delete"; messageId: string }
   | { type: "reaction"; messageId: string; emoji: string };
 
+function Avatar({ className, name, url }: { className: string; name: string; url?: string | null }) {
+  return <span aria-label={`${name} profile picture`} className={`${className} grid shrink-0 place-items-center rounded-full bg-stone-200 bg-cover bg-center font-medium`} style={url ? { backgroundImage: `url(${url})` } : undefined}>{url ? null : name.charAt(0).toUpperCase()}</span>;
+}
+
 export function ChatShell({
+  currentUserAvatar,
   currentUserName,
+  currentUsername,
   initialConversations,
 }: {
+  currentUserAvatar: string | null;
   currentUserName: string;
+  currentUsername: string | null;
   initialConversations: ConversationView[];
 }) {
   const router = useRouter();
@@ -53,6 +62,12 @@ export function ChatShell({
   const [messageSearch, setMessageSearch] = useState("");
   const [activeMatch, setActiveMatch] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState(currentUserName);
+  const [profileUsername, setProfileUsername] = useState(currentUsername ?? "");
+  const [profileAvatar, setProfileAvatar] = useState(currentUserAvatar ?? "");
+  const [profileError, setProfileError] = useState("");
+  const [profilePending, setProfilePending] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedIds, setArchivedIds] = useState<string[]>(() => initialConversations.filter(({ archived }) => archived).map(({ id }) => id));
   const [mutedIds, setMutedIds] = useState<string[]>(() => initialConversations.filter(({ muted }) => muted).map(({ id }) => id));
@@ -297,6 +312,37 @@ export function ChatShell({
     setMenuOpen(false);
   }
 
+  function chooseProfilePhoto(file?: File) {
+    if (!file) return;
+    setProfileError("");
+    if (!file.type.startsWith("image/") || file.size > 1_000_000) {
+      setProfileError("Choose a JPG, PNG, or WebP image smaller than 1 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setProfileAvatar(String(reader.result ?? ""));
+    reader.readAsDataURL(file);
+  }
+
+  async function saveProfile() {
+    if (profilePending) return;
+    setProfilePending(true);
+    setProfileError("");
+    const formData = new FormData();
+    formData.set("displayName", profileName);
+    formData.set("username", profileUsername);
+    formData.set("avatarUrl", profileAvatar);
+    try {
+      await updateProfile(formData);
+      setProfileOpen(false);
+      router.refresh();
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Could not update your profile.");
+    } finally {
+      setProfilePending(false);
+    }
+  }
+
   async function signOut() {
     await authClient.signOut();
     router.push("/sign-in");
@@ -344,7 +390,7 @@ export function ChatShell({
 
               return (
                 <button className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left ${conversation.id === activeConversation.id ? "bg-stone-100" : "hover:bg-stone-50"}`} key={conversation.id} onClick={() => chooseConversation(conversation.id)} type="button">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-stone-200 text-sm font-medium">{conversation.name.charAt(0)}</span>
+                  <Avatar className="size-9 text-sm" name={conversation.name} url={conversation.avatarUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className={`truncate text-[14px] tracking-[-0.005em] ${unreadIds.includes(conversation.id) ? "font-bold text-slate-950" : "font-semibold"}`}>{conversation.name}</span>
@@ -359,8 +405,7 @@ export function ChatShell({
           </nav>
 
           <footer className="flex items-center gap-3 border-t border-stone-200 p-4">
-            <span className="grid size-8 place-items-center rounded-full bg-stone-900 text-xs font-medium text-white">{currentUserName.charAt(0).toUpperCase()}</span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{currentUserName}</span>
+            <button aria-label="Open profile" className="contents" onClick={() => setProfileOpen(true)} type="button"><Avatar className="size-8 bg-stone-900 text-xs text-white" name={currentUserName} url={currentUserAvatar} /><span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{currentUserName}</span></button>
             <button className="text-xs text-stone-500 hover:text-stone-900" onClick={signOut} type="button">Sign out</button>
           </footer>
         </aside>
@@ -369,7 +414,7 @@ export function ChatShell({
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4 sm:px-5">
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
-              <span className="grid size-9 place-items-center rounded-full bg-stone-200 text-sm font-medium">{activeConversation.name.charAt(0)}</span>
+              <Avatar className="size-9 text-sm" name={activeConversation.name} url={activeConversation.avatarUrl} />
               <div>
                 <h2 className="text-[15px] font-semibold leading-5 tracking-[-0.005em]">{activeConversation.name}</h2>
                 <p className="text-[12px] leading-4 text-stone-500">{activeConversation.status}</p>
@@ -411,6 +456,7 @@ export function ChatShell({
         </section>
       </div>
       {newConversationOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-black/20 px-4"><form className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-5 shadow-lg" onSubmit={(event) => { event.preventDefault(); void startConversation(); }}><h2 className="text-base font-semibold">New conversation</h2><p className="mt-1 text-sm text-stone-500">Enter the person’s Knot email.</p><input autoFocus className="mt-4 h-10 w-full rounded-md border border-stone-300 px-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setNewConversationEmail(event.target.value)} placeholder="name@example.com" type="email" value={newConversationEmail} /><div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-stone-500" onClick={() => setNewConversationOpen(false)} type="button">Cancel</button><button className="rounded-md bg-stone-900 px-3 py-2 text-sm text-white" type="submit">Start chat</button></div></form></div>}
+      {profileOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-stone-950/30 px-4 backdrop-blur-[2px]" onMouseDown={(event) => { if (event.target === event.currentTarget) setProfileOpen(false); }}><form className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl" onSubmit={(event) => { event.preventDefault(); void saveProfile(); }}><div className="flex items-center justify-between"><div><h2 className="text-lg font-semibold tracking-tight">Your profile</h2><p className="mt-1 text-sm text-stone-500">How people see you on Knot.</p></div><button aria-label="Close profile" className="grid size-8 place-items-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200" onClick={() => setProfileOpen(false)} type="button">×</button></div><div className="mt-6 flex items-center gap-4"><Avatar className="size-20 text-xl" name={profileName || currentUserName} url={profileAvatar} /><div><label className="inline-flex cursor-pointer rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium hover:bg-stone-50">Choose photo<input accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => chooseProfilePhoto(event.target.files?.[0])} type="file" /></label>{profileAvatar && <button className="ml-2 px-2 py-2 text-sm text-stone-500 hover:text-stone-900" onClick={() => setProfileAvatar("")} type="button">Remove</button>}<p className="mt-1.5 text-xs text-stone-400">JPG, PNG or WebP · max 1 MB</p></div></div><div className="mt-6 space-y-4"><label className="block text-sm"><span className="mb-1.5 block font-medium">Display name</span><input className="h-10 w-full rounded-lg border border-stone-300 bg-stone-50 px-3 outline-none focus:border-stone-500" maxLength={50} minLength={2} onChange={(event) => setProfileName(event.target.value)} required value={profileName} /></label><label className="block text-sm"><span className="mb-1.5 block font-medium">Username</span><div className="flex h-10 items-center rounded-lg border border-stone-300 bg-stone-50 px-3 focus-within:border-stone-500"><span className="text-stone-400">@</span><input className="min-w-0 flex-1 bg-transparent outline-none" maxLength={20} minLength={3} onChange={(event) => setProfileUsername(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))} placeholder="your_username" value={profileUsername} /></div></label></div>{profileError && <p className="mt-3 text-sm text-red-600">{profileError}</p>}<div className="mt-6 flex justify-end gap-2"><button className="rounded-lg px-4 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-100" disabled={profilePending} onClick={() => setProfileOpen(false)} type="button">Cancel</button><button className="rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-medium text-white disabled:bg-stone-300" disabled={profilePending || profileName.trim().length < 2} type="submit">{profilePending ? "Saving…" : "Save profile"}</button></div></form></div>}
       {renameOpen && <div className="fixed inset-0 z-30 grid place-items-center bg-black/25 px-4"><form className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl" onSubmit={(event) => { event.preventDefault(); void submitRename(); }}><h2 className="text-base font-semibold">Rename conversation</h2><p className="mt-1 text-sm text-slate-500">Choose a name that will appear for everyone in this chat.</p><input autoFocus className="mt-4 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-slate-500" maxLength={80} onChange={(event) => setRenameValue(event.target.value)} required value={renameValue} />{renameError && <p className="mt-2 text-sm text-red-600">{renameError}</p>}<div className="mt-4 flex justify-end gap-2"><button className="px-3 py-2 text-sm text-slate-500" disabled={renamePending} onClick={() => setRenameOpen(false)} type="button">Cancel</button><button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white disabled:bg-slate-400" disabled={renamePending || !renameValue.trim()} type="submit">{renamePending ? "Saving…" : "Save name"}</button></div></form></div>}
       {editingMessage && <div className="fixed inset-0 z-30 grid place-items-center bg-stone-950/30 px-4 backdrop-blur-[2px]" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingMessage(null); }}><form className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-5 shadow-2xl shadow-stone-950/20" onSubmit={(event) => { event.preventDefault(); submitMessageEdit(); }}><div className="flex items-start justify-between"><div><h2 className="text-[17px] font-semibold tracking-tight">Edit message</h2><p className="mt-1 text-xs text-stone-500">Update your message for everyone.</p></div><button aria-label="Close" className="grid size-8 place-items-center rounded-full bg-stone-100 text-stone-500 hover:bg-stone-200" onClick={() => setEditingMessage(null)} type="button">×</button></div><textarea autoFocus className="mt-5 min-h-28 w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 outline-none transition focus:border-stone-400 focus:bg-white focus:ring-4 focus:ring-stone-100" maxLength={4000} onChange={(event) => setEditValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} required value={editValue} /><div className="mt-4 flex justify-end gap-2"><button className="rounded-lg px-4 py-2.5 text-sm font-medium text-stone-500 hover:bg-stone-100" onClick={() => setEditingMessage(null)} type="button">Cancel</button><button className="rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700 disabled:bg-stone-300" disabled={!editValue.trim()} type="submit">Save changes</button></div></form></div>}
       {deletingMessage && <div className="fixed inset-0 z-30 grid place-items-center bg-stone-950/30 px-4 backdrop-blur-[2px]" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeletingMessage(null); }}><section className="w-full max-w-sm rounded-2xl border border-white/70 bg-white p-5 shadow-2xl shadow-stone-950/20"><h2 className="text-[17px] font-semibold tracking-tight">Delete this message?</h2><p className="mt-1.5 text-sm leading-5 text-stone-500">It will disappear for everyone in this conversation. This cannot be undone.</p><div className="mt-5 grid grid-cols-2 gap-2"><button className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50" onClick={() => setDeletingMessage(null)} type="button">Keep message</button><button className="rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700" onClick={confirmMessageDelete} type="button">Delete</button></div></section></div>}

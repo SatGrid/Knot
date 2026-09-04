@@ -128,6 +128,25 @@ export async function toggleMessageReaction(messageId: string, emoji: string) {
   await notifyConversationMembers(message.conversationId);
 }
 
+export async function updateProfile(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("You must be signed in to update your profile.");
+
+  const displayName = String(formData.get("displayName") ?? "").trim();
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const avatarUrl = String(formData.get("avatarUrl") ?? "").trim() || null;
+  if (displayName.length < 2 || displayName.length > 50) throw new Error("Name must be between 2 and 50 characters.");
+  if (username && !/^[a-z0-9_]{3,20}$/.test(username)) throw new Error("Username must be 3–20 characters using letters, numbers, or underscores.");
+  if (avatarUrl && (!avatarUrl.startsWith("data:image/") || avatarUrl.length > 1_500_000)) throw new Error("Choose an image smaller than 1 MB.");
+
+  try {
+    await prisma.user.update({ where: { id: session.user.id }, data: { displayName, username: username || null, avatarUrl } });
+  } catch {
+    throw new Error("That username is already taken.");
+  }
+  revalidatePath("/");
+}
+
 export async function startConversationByEmail(email: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("You must be signed in to start a conversation.");
