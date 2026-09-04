@@ -51,13 +51,46 @@ button {
 }
 
 /* Outgoing rows reverse only the zero-width action anchor, keeping bubbles flush right. */
+[id^="message-"] > div:last-child > button[aria-label="Message options"] {
+  position: absolute;
+  right: -1.75rem !important;
+  top: 0.3rem !important;
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  transform: none !important;
+  border-radius: 0.45rem;
+  background: #f5f5f4 !important;
+  box-shadow: none !important;
+  color: #78716c !important;
+}
+
 [id^="message-"].flex-row-reverse > div:last-child > button[aria-label="Message options"] {
-  transform: translateX(0.25rem);
+  left: 1.75rem !important;
+  right: auto !important;
+  transform: none !important;
+  background: #1c1917 !important;
+  color: #d6d3d1 !important;
+}
+
+[id^="message-"] > div:last-child > div.absolute {
+  left: auto !important;
+  right: -1.75rem !important;
+  top: 1.85rem !important;
 }
 
 [id^="message-"].flex-row-reverse > div:last-child > div.absolute {
-  left: 0.25rem;
-  right: auto;
+  left: 1.75rem !important;
+  right: auto !important;
+}
+
+.knot-dark [id^="message-"] > div:last-child > button[aria-label="Message options"] {
+  background: #22252b !important;
+  color: #a8a29e !important;
+}
+
+.knot-dark [id^="message-"].flex-row-reverse > div:last-child > button[aria-label="Message options"] {
+  background: #f5f5f4 !important;
+  color: #57534e !important;
 }
 
 .knot-dark {
