@@ -50,6 +50,16 @@ button {
   display: none;
 }
 
+/* Outgoing rows reverse only the zero-width action anchor, keeping bubbles flush right. */
+[id^="message-"].flex-row-reverse > div:last-child > button[aria-label="Message options"] {
+  transform: translateX(0.25rem);
+}
+
+[id^="message-"].flex-row-reverse > div:last-child > div.absolute {
+  left: 0.25rem;
+  right: auto;
+}
+
 .knot-dark {
   color-scheme: dark;
   background: #0d0f12 !important;
