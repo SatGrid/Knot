@@ -62,5 +62,14 @@ export default async function Home() {
     };
   });
 
-  return <ChatShell currentUserName={session.user.name} initialConversations={conversations} />;
+  const conversationVersion = memberships.map(({ conversation, archivedAt, mutedAt, lastReadAt }) => [
+    conversation.id,
+    conversation.updatedAt.toISOString(),
+    conversation.title ?? "",
+    archivedAt?.toISOString() ?? "",
+    mutedAt?.toISOString() ?? "",
+    lastReadAt?.toISOString() ?? "",
+  ].join(":" )).join("|");
+
+  return <ChatShell currentUserName={session.user.name} initialConversations={conversations} key={conversationVersion} />;
 }

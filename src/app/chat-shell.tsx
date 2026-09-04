@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useOptimistic, useState } from "react";
+import { useEffect, useMemo, useOptimistic, useState } from "react";
 import { useRouter } from "next/navigation";
 import { renameConversation, sendMessage, startConversationByEmail, updateConversationPreference } from "./actions";
 import { authClient } from "@/lib/auth-client";
@@ -67,6 +67,14 @@ export function ChatShell({
           : conversation,
       ),
   );
+
+  useEffect(() => {
+    const refresh = window.setInterval(() => {
+      if (document.visibilityState === "visible") router.refresh();
+    }, 3000);
+
+    return () => window.clearInterval(refresh);
+  }, [router]);
 
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
   const visibleConversations = useMemo(
