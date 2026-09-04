@@ -38,10 +38,7 @@ export function ChatShell({
   initialConversations: ConversationView[];
 }) {
   const router = useRouter();
-  const [activeId, setActiveId] = useState(() => {
-    const rememberedId = typeof window === "undefined" ? "" : window.sessionStorage.getItem("knot-active-conversation") ?? "";
-    return initialConversations.some(({ id }) => id === rememberedId) ? rememberedId : initialConversations[0]?.id ?? "";
-  });
+  const [activeId, setActiveId] = useState(initialConversations[0]?.id ?? "");
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -95,7 +92,6 @@ export function ChatShell({
   }, [activeConversation?.id, activeConversation?.unread, router]);
 
   function chooseConversation(id: string) {
-    window.sessionStorage.setItem("knot-active-conversation", id);
     setActiveId(id);
     setSidebarOpen(false);
   }
@@ -105,7 +101,6 @@ export function ChatShell({
     if (!email) return;
     try {
       const result = await startConversationByEmail(email);
-      window.sessionStorage.setItem("knot-active-conversation", result.id);
       setActiveId(result.id);
       setNewConversationEmail("");
       setNewConversationOpen(false);
