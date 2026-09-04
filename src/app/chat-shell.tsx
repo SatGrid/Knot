@@ -99,13 +99,24 @@ export function ChatShell({
     const body = String(formData.get("message") ?? "").trim();
     if (!body) return;
 
+    const pendingId = `pending-${Date.now()}`;
     addOptimisticMessage({
       conversationId: activeConversation.id,
       body,
-      id: `pending-${Date.now()}`,
+      id: pendingId,
     });
     setDraft("");
-    await sendMessage(activeConversation.id, formData);
+    try {
+      const saved = await sendMessage(activeConversation.id, formData);
+      const time = new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(saved.createdAt));
+      setLocalConversations((current) => current.map((conversation) => conversation.id === activeConversation.id ? {
+        ...conversation,
+        time: "Now",
+        messages: [...conversation.messages, { id: saved.id, body: saved.body, sender: "me", time, delivery: "Sent" }],
+      } : conversation));
+    } catch {
+      setDraft(body);
+    }
   }
 
   function openRenameDialog() {

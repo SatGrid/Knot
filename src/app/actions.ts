@@ -29,21 +29,23 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     throw new Error("You do not have access to this conversation.");
   }
 
-  await prisma.$transaction([
-    prisma.message.create({
+  const message = await prisma.$transaction(async (tx) => {
+    const created = await tx.message.create({
       data: {
         conversationId,
         senderId: session.user.id,
         body,
       },
-    }),
-    prisma.conversation.update({
+    });
+    await tx.conversation.update({
       where: { id: conversationId },
       data: { updatedAt: new Date() },
-    }),
-  ]);
+    });
+    return created;
+  });
 
   revalidatePath("/");
+  return { id: message.id, body: message.body, createdAt: message.createdAt.toISOString() };
 }
 
 export async function startConversationByEmail(email: string) {
