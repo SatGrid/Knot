@@ -56,9 +56,8 @@ export function ChatShell({
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
   const [renamePending, setRenamePending] = useState(false);
-  const [localConversations, setLocalConversations] = useState(initialConversations);
   const [conversations, addOptimisticMessage] = useOptimistic(
-    localConversations,
+    initialConversations,
     (current, message: OptimisticMessage) =>
       current.map((conversation) =>
         conversation.id === message.conversationId
@@ -96,11 +95,11 @@ export function ChatShell({
     if (!email) return;
     try {
       const result = await startConversationByEmail(email);
-      setLocalConversations((current) => [...current, { id: result.id, name: result.name, status: "Available", time: "Now", messages: [], archived: false, muted: false, unread: false }]);
       window.sessionStorage.setItem("knot-active-conversation", result.id);
       setActiveId(result.id);
       setNewConversationEmail("");
       setNewConversationOpen(false);
+      router.refresh();
     } catch {
       setNewConversationEmail(email);
     }
@@ -120,13 +119,8 @@ export function ChatShell({
     });
     setDraft("");
     try {
-      const saved = await sendMessage(activeConversation.id, formData);
-      const time = new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(saved.createdAt));
-      setLocalConversations((current) => current.map((conversation) => conversation.id === activeConversation.id ? {
-        ...conversation,
-        time: "Now",
-        messages: [...conversation.messages, { id: saved.id, body: saved.body, sender: "me", time, delivery: "Sent" }],
-      } : conversation));
+      await sendMessage(activeConversation.id, formData);
+      router.refresh();
     } catch {
       setDraft(body);
     }
@@ -146,9 +140,9 @@ export function ChatShell({
     setRenameError("");
 
     try {
-      const result = await renameConversation(activeConversation.id, title);
-      setLocalConversations((current) => current.map((conversation) => conversation.id === activeConversation.id ? { ...conversation, name: result.title } : conversation));
+      await renameConversation(activeConversation.id, title);
       setRenameOpen(false);
+      router.refresh();
     } catch (error) {
       setRenameError(error instanceof Error ? error.message : "Could not rename this conversation.");
     } finally {
