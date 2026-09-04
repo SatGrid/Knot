@@ -44,3 +44,69 @@ p {
 button {
   cursor: pointer;
 }
+
+.knot-dark {
+  color-scheme: dark;
+  background: #0d0f12 !important;
+  color: #f5f5f4 !important;
+}
+
+.knot-dark .bg-white {
+  background-color: #181a1f !important;
+}
+
+.knot-dark .bg-slate-50,
+.knot-dark .bg-stone-50 {
+  background-color: #14161a !important;
+}
+
+.knot-dark .bg-slate-100,
+.knot-dark .bg-stone-100 {
+  background-color: #22252b !important;
+}
+
+.knot-dark .bg-slate-200,
+.knot-dark .bg-stone-200 {
+  background-color: #30343c !important;
+}
+
+.knot-dark .bg-stone-900 {
+  background-color: #f5f5f4 !important;
+  color: #171717 !important;
+}
+
+.knot-dark .knot-theme-thumb {
+  background-color: #f5f5f4 !important;
+}
+
+.knot-dark .border-slate-200,
+.knot-dark .border-slate-300,
+.knot-dark .border-stone-200,
+.knot-dark .border-stone-300 {
+  border-color: #30343c !important;
+}
+
+.knot-dark .text-slate-950,
+.knot-dark .text-slate-900,
+.knot-dark .text-slate-800,
+.knot-dark .text-stone-900,
+.knot-dark .text-stone-800,
+.knot-dark .text-stone-700 {
+  color: #f5f5f4 !important;
+}
+
+.knot-dark .text-slate-600,
+.knot-dark .text-slate-500,
+.knot-dark .text-stone-600,
+.knot-dark .text-stone-500 {
+  color: #a8a29e !important;
+}
+
+.knot-dark .text-stone-400 {
+  color: #78716c !important;
+}
+
+.knot-dark input,
+.knot-dark textarea {
+  caret-color: #f5f5f4;
+}

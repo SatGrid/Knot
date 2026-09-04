@@ -48,6 +48,7 @@ export function ChatShell({
   const [messageSearchOpen, setMessageSearchOpen] = useState(false);
   const [messageSearch, setMessageSearch] = useState("");
   const [activeMatch, setActiveMatch] = useState(0);
+  const [darkMode, setDarkMode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [archivedIds, setArchivedIds] = useState<string[]>(() => initialConversations.filter(({ archived }) => archived).map(({ id }) => id));
   const [mutedIds, setMutedIds] = useState<string[]>(() => initialConversations.filter(({ muted }) => muted).map(({ id }) => id));
@@ -82,6 +83,19 @@ export function ChatShell({
     return () => events.close();
   }, [router]);
 
+  useEffect(() => {
+    const storedDarkMode = window.localStorage.getItem("knot-theme") === "dark";
+    queueMicrotask(() => setDarkMode(storedDarkMode));
+  }, []);
+
+  function toggleTheme() {
+    setDarkMode((current) => {
+      const next = !current;
+      window.localStorage.setItem("knot-theme", next ? "dark" : "light");
+      return next;
+    });
+  }
+
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
   const unreadIds = useMemo(() => conversations.filter(({ unread }) => unread).map(({ id }) => id), [conversations]);
   const visibleConversations = useMemo(
@@ -93,10 +107,6 @@ export function ChatShell({
     if (!query || !activeConversation) return [];
     return activeConversation.messages.filter(({ body }) => body.toLowerCase().includes(query)).map(({ id }) => id);
   }, [activeConversation, messageSearch]);
-
-  useEffect(() => {
-    setActiveMatch(0);
-  }, [messageSearch, activeId]);
 
   useEffect(() => {
     const id = messageMatches[activeMatch];
@@ -117,6 +127,7 @@ export function ChatShell({
     setSidebarOpen(false);
     setMessageSearchOpen(false);
     setMessageSearch("");
+    setActiveMatch(0);
   }
 
   function highlightedMessage(body: string) {
@@ -252,7 +263,7 @@ export function ChatShell({
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-slate-100 p-0 text-slate-900 sm:p-4">
+    <main className={`${darkMode ? "knot-dark" : ""} h-dvh overflow-hidden bg-slate-100 p-0 text-slate-900 sm:p-4`}>
       <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:grid-cols-[280px_1fr] sm:rounded-2xl sm:border">
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
@@ -265,7 +276,7 @@ export function ChatShell({
                 <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
               </div>
             </div>
-            <button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button>
+            <div className="flex items-center gap-2"><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5 transition-colors" onClick={toggleTheme} title={`${darkMode ? "Light" : "Dark"} mode`} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : "translate-x-0"}`} /></button><button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button></div>
           </header>
 
           <div className="p-3">
@@ -314,7 +325,7 @@ export function ChatShell({
             <div className="flex items-center gap-1"><button className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${messageSearchOpen ? "bg-stone-100 text-stone-900" : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"}`} onClick={() => { setMessageSearchOpen((open) => !open); setMessageSearch(""); }} type="button">Search</button><div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleUnread()} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleMuted()} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleArchived()} type="button">{archivedIds.includes(activeConversation.id) ? "Unarchive conversation" : "Archive conversation"}</button></div>}</div></div>
           </header>
 
-          {messageSearchOpen && <div className="flex h-12 shrink-0 items-center gap-2 border-b border-stone-200 bg-stone-50 px-4 sm:px-5"><input autoFocus className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-stone-400" onChange={(event) => setMessageSearch(event.target.value)} placeholder="Search this conversation" type="search" value={messageSearch} /><span className="shrink-0 text-[11px] tabular-nums text-stone-400">{messageSearch.trim() ? messageMatches.length ? `${activeMatch + 1} of ${messageMatches.length}` : "No results" : ""}</span><button aria-label="Previous result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current - 1 + messageMatches.length) % messageMatches.length)} type="button">↑</button><button aria-label="Next result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current + 1) % messageMatches.length)} type="button">↓</button><button aria-label="Close search" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200" onClick={() => { setMessageSearchOpen(false); setMessageSearch(""); }} type="button">×</button></div>}
+          {messageSearchOpen && <div className="flex h-12 shrink-0 items-center gap-2 border-b border-stone-200 bg-stone-50 px-4 sm:px-5"><input autoFocus className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-stone-400" onChange={(event) => { setMessageSearch(event.target.value); setActiveMatch(0); }} placeholder="Search this conversation" type="search" value={messageSearch} /><span className="shrink-0 text-[11px] tabular-nums text-stone-400">{messageSearch.trim() ? messageMatches.length ? `${activeMatch + 1} of ${messageMatches.length}` : "No results" : ""}</span><button aria-label="Previous result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current - 1 + messageMatches.length) % messageMatches.length)} type="button">↑</button><button aria-label="Next result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current + 1) % messageMatches.length)} type="button">↓</button><button aria-label="Close search" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200" onClick={() => { setMessageSearchOpen(false); setMessageSearch(""); setActiveMatch(0); }} type="button">×</button></div>}
 
           <div aria-live="polite" className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
             <p className="mb-6 text-center text-xs text-stone-400">Today</p>
