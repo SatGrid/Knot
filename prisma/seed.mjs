@@ -52,11 +52,12 @@ async function main() {
 
   await client.query(
     `INSERT INTO account (id, issuer, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
-     VALUES (gen_random_uuid(), 'local:credential', $1::text, 'credential', $1::uuid, $2, NOW(), NOW())
+     VALUES (gen_random_uuid(), 'local:credential', $1::text, 'credential', $1::uuid, $3, NOW(), NOW()),
+            (gen_random_uuid(), 'local:credential', $2::text, 'credential', $2::uuid, $3, NOW(), NOW())
      ON CONFLICT (issuer, "accountId") DO UPDATE
      SET password = EXCLUDED.password,
          "updatedAt" = NOW()`,
-    [ids.satyam, passwordHash],
+    [ids.satyam, ids.riya, passwordHash],
   );
 
   await client.query(
