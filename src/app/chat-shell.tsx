@@ -190,7 +190,7 @@ export function ChatShell({
   }
 
   return (
-    <main className="h-dvh bg-slate-100 p-0 text-slate-900 sm:p-4">
+    <main className="h-dvh overflow-hidden bg-slate-100 p-0 text-slate-900 sm:p-4">
       <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:grid-cols-[280px_1fr] sm:rounded-2xl sm:border">
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
@@ -239,7 +239,7 @@ export function ChatShell({
           </footer>
         </aside>
 
-        <section className="flex min-w-0 flex-col bg-white">
+        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-white">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4 sm:px-5">
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
@@ -252,7 +252,7 @@ export function ChatShell({
             <div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleUnread()} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleMuted()} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute" : "Mute notifications"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleArchived()} type="button">{archivedIds.includes(activeConversation.id) ? "Unarchive conversation" : "Archive conversation"}</button></div>}</div>
           </header>
 
-          <div aria-live="polite" className="flex flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
+          <div aria-live="polite" className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto px-4 py-6 sm:px-8">
             <p className="mb-6 text-center text-xs text-stone-400">Today</p>
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
