@@ -110,6 +110,10 @@ model Message {
   senderId       String       @db.Uuid
   replyToId      String?      @db.Uuid
   body           String       @db.Text
+  attachmentUrl  String?
+  attachmentName String?
+  attachmentType String?
+  attachmentSize Int?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   editedAt       DateTime?

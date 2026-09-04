@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { deleteMessage, editMessage, renameConversation, sendMessage, startConversationByEmail, toggleMessageReaction, updateConversationPreference, updateProfile } from "./actions";
 import { authClient } from "@/lib/auth-client";
@@ -14,6 +15,7 @@ type MessageView = {
   edited: boolean;
   replyTo?: { id: string; body: string; sender: string };
   reactions: { emoji: string; count: number; reacted: boolean }[];
+  attachment?: { url: string; name: string; type: string; size: number };
 };
 
 export type ConversationView = {
@@ -29,7 +31,7 @@ export type ConversationView = {
 };
 
 type OptimisticChange =
-  | { type: "add"; conversationId: string; body: string; id: string; replyTo?: MessageView["replyTo"] }
+  | { type: "add"; conversationId: string; body: string; id: string; replyTo?: MessageView["replyTo"]; attachment?: MessageView["attachment"] }
   | { type: "edit"; messageId: string; body: string }
   | { type: "delete"; messageId: string }
   | { type: "reaction"; messageId: string; emoji: string };
@@ -72,6 +74,9 @@ export function ChatShell({
   const [photoY, setPhotoY] = useState(50);
   const [profileError, setProfileError] = useState("");
   const [profilePending, setProfilePending] = useState(false);
+  const [attachment, setAttachment] = useState<MessageView["attachment"]>();
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [archivedIds, setArchivedIds] = useState<string[]>(() => initialConversations.filter(({ archived }) => archived).map(({ id }) => id));
   const [mutedIds, setMutedIds] = useState<string[]>(() => initialConversations.filter(({ muted }) => muted).map(({ id }) => id));
@@ -94,7 +99,7 @@ export function ChatShell({
     initialConversations,
     (current, change: OptimisticChange) => current.map((conversation) => {
       if (change.type === "add" && conversation.id === change.conversationId) {
-        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false, replyTo: change.replyTo, reactions: [] }] };
+        return { ...conversation, time: "Now", messages: [...conversation.messages, { id: change.id, body: change.body, sender: "me", time: "Now", delivery: "Sent", edited: false, replyTo: change.replyTo, reactions: [], attachment: change.attachment }] };
       }
       if (change.type === "edit") {
         return { ...conversation, messages: conversation.messages.map((message) => message.id === change.messageId ? { ...message, body: change.body, edited: true } : message) };
@@ -216,11 +221,13 @@ export function ChatShell({
     if (!activeConversation) return;
 
     const body = String(formData.get("message") ?? "").trim();
-    if (!body) return;
+    if (!body && !attachment) return;
 
     const pendingId = `pending-${Date.now()}`;
     const reply = replyingTo ? { id: replyingTo.id, body: replyingTo.body, sender: replyingTo.sender === "me" ? "You" : activeConversation.name } : undefined;
+    const sentAttachment = attachment;
     setDraft("");
+    setAttachment(undefined);
     window.localStorage.removeItem(`knot-draft:${activeConversation.id}`);
     setReplyingTo(null);
     startMessageTransition(async () => {
@@ -230,12 +237,14 @@ export function ChatShell({
         body,
         id: pendingId,
         replyTo: reply,
+        attachment: sentAttachment,
       });
       try {
         await sendMessage(activeConversation.id, formData);
         router.refresh();
       } catch {
         setDraft(body);
+        setAttachment(sentAttachment);
       }
     });
   }
@@ -294,6 +303,24 @@ export function ChatShell({
       await toggleMessageReaction(messageId, emoji);
       router.refresh();
     });
+  }
+
+  async function uploadAttachment(file?: File) {
+    if (!file) return;
+    setAttachmentUploading(true);
+    setAttachmentError("");
+    const data = new FormData();
+    data.set("file", file);
+    try {
+      const response = await fetch("/api/uploads", { method: "POST", body: data });
+      const result = await response.json() as MessageView["attachment"] & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Could not upload that file.");
+      setAttachment({ url: result.url, name: result.name, type: result.type, size: result.size });
+    } catch (error) {
+      setAttachmentError(error instanceof Error ? error.message : "Could not upload that file.");
+    } finally {
+      setAttachmentUploading(false);
+    }
   }
 
   async function toggleUnread() {
@@ -453,7 +480,7 @@ export function ChatShell({
             <div className="space-y-4">
               {activeConversation.messages.map((message) => (
                 <div className={`flex rounded-xl transition ${messageMatches[activeMatch] === message.id ? "bg-amber-50/70" : ""} ${message.sender === "me" ? "justify-end" : "justify-start"}`} id={`message-${message.id}`} key={message.id}>
-                  <div className={`group relative max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`flex items-center gap-2 ${message.sender === "them" ? "flex-row-reverse" : ""}`}><span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => setReplyingTo(message)} type="button">Reply</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setReactionPickerId((id) => id === message.id ? null : message.id)} type="button">React</button>{message.sender === "me" && <><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></>}</span><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.replyTo && <div className={`mb-2 rounded-lg border-l-2 px-2.5 py-1.5 text-xs leading-4 ${message.sender === "me" ? "border-stone-400 bg-black/15 text-stone-200" : "border-stone-300 bg-white/60 text-stone-500"}`}><p className="font-semibold">{message.replyTo.sender}</p><p className="max-w-64 truncate opacity-80">{message.replyTo.body}</p></div>}{highlightedMessage(message.body)}</div></div>{reactionPickerId === message.id && <div className={`absolute z-10 mt-1 flex gap-1 rounded-full border border-stone-200 bg-white p-1.5 shadow-lg ${message.sender === "me" ? "right-0" : "left-0"}`}>{["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => <button className="grid size-8 place-items-center rounded-full text-base hover:bg-stone-100" key={emoji} onClick={() => reactToMessage(message.id, emoji)} type="button">{emoji}</button>)}</div>}{message.reactions.length > 0 && <div className={`mt-1 flex flex-wrap gap-1 ${message.sender === "me" ? "justify-end" : "justify-start"}`}>{message.reactions.map((reaction) => <button className={`rounded-full border px-2 py-0.5 text-xs shadow-sm ${reaction.reacted ? "border-stone-400 bg-stone-100" : "border-stone-200 bg-white"}`} key={reaction.emoji} onClick={() => reactToMessage(message.id, reaction.emoji)} type="button">{reaction.emoji} {reaction.count}</button>)}</div>}<p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
+                  <div className={`group relative max-w-[78%] ${message.sender === "me" ? "text-right" : "text-left"}`}><div className={`flex items-center gap-2 ${message.sender === "them" ? "flex-row-reverse" : ""}`}><span className="flex items-center gap-2 text-[11px] font-medium text-stone-400 opacity-100 transition sm:translate-x-1 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100"><button className="transition hover:text-stone-900" onClick={() => setReplyingTo(message)} type="button">Reply</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setReactionPickerId((id) => id === message.id ? null : message.id)} type="button">React</button>{message.sender === "me" && <><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => { setEditingMessage(message); setEditValue(message.body); }} type="button">Edit</button><span className="text-stone-200">·</span><button className="transition hover:text-stone-900" onClick={() => setDeletingMessage(message)} type="button">Delete</button></>}</span><div className={`rounded-2xl px-4 py-2.5 text-left text-[14px] leading-[1.55] shadow-sm ${message.sender === "me" ? "rounded-br-md bg-stone-900 text-white" : "rounded-bl-md bg-stone-100"}`}>{message.replyTo && <div className={`mb-2 rounded-lg border-l-2 px-2.5 py-1.5 text-xs leading-4 ${message.sender === "me" ? "border-stone-400 bg-black/15 text-stone-200" : "border-stone-300 bg-white/60 text-stone-500"}`}><p className="font-semibold">{message.replyTo.sender}</p><p className="max-w-64 truncate opacity-80">{message.replyTo.body}</p></div>}{message.attachment && (message.attachment.type.startsWith("image/") ? <a className="mb-2 block overflow-hidden rounded-xl" href={message.attachment.url} rel="noreferrer" target="_blank"><Image alt={message.attachment.name} className="h-auto max-h-72 w-auto max-w-full object-cover" height={480} src={message.attachment.url} unoptimized width={640} /></a> : <a className={`mb-2 flex min-w-56 items-center gap-3 rounded-xl p-3 ${message.sender === "me" ? "bg-black/15" : "bg-white/70"}`} download href={message.attachment.url}><span className="grid size-9 place-items-center rounded-lg bg-stone-200 text-[10px] font-bold text-stone-700">FILE</span><span className="min-w-0"><span className="block truncate text-sm font-medium">{message.attachment.name}</span><span className="block text-[10px] opacity-60">{message.attachment.size >= 1048576 ? `${(message.attachment.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(message.attachment.size / 1024))} KB`}</span></span></a>)}{message.body && highlightedMessage(message.body)}</div></div>{reactionPickerId === message.id && <div className={`absolute z-10 mt-1 flex gap-1 rounded-full border border-stone-200 bg-white p-1.5 shadow-lg ${message.sender === "me" ? "right-0" : "left-0"}`}>{["👍", "❤️", "😂", "😮", "😢", "🔥"].map((emoji) => <button className="grid size-8 place-items-center rounded-full text-base hover:bg-stone-100" key={emoji} onClick={() => reactToMessage(message.id, emoji)} type="button">{emoji}</button>)}</div>}{message.reactions.length > 0 && <div className={`mt-1 flex flex-wrap gap-1 ${message.sender === "me" ? "justify-end" : "justify-start"}`}>{message.reactions.map((reaction) => <button className={`rounded-full border px-2 py-0.5 text-xs shadow-sm ${reaction.reacted ? "border-stone-400 bg-stone-100" : "border-stone-200 bg-white"}`} key={reaction.emoji} onClick={() => reactToMessage(message.id, reaction.emoji)} type="button">{reaction.emoji} {reaction.count}</button>)}</div>}<p className="mt-1 px-1 text-[10px] leading-4 text-stone-400">{message.time}{message.edited ? " · Edited" : ""}{message.delivery ? ` · ${message.delivery}` : ""}</p></div>
                 </div>
               ))}
               {typingConversationId === activeConversation.id && <div className="flex items-center gap-2 text-xs text-stone-400"><span className="flex gap-1 rounded-full bg-stone-100 px-3 py-2"><i className="size-1.5 animate-pulse rounded-full bg-stone-400" /><i className="size-1.5 animate-pulse rounded-full bg-stone-400 [animation-delay:150ms]" /><i className="size-1.5 animate-pulse rounded-full bg-stone-400 [animation-delay:300ms]" /></span><span>{typingName} is typing</span></div>}
@@ -462,19 +489,17 @@ export function ChatShell({
           </div>
 
           {replyingTo && <div className="flex shrink-0 items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 sm:px-5"><div className="min-w-0 flex-1 border-l-2 border-stone-400 pl-3"><p className="text-xs font-semibold text-stone-700">Replying to {replyingTo.sender === "me" ? "yourself" : activeConversation.name}</p><p className="truncate text-xs text-stone-500">{replyingTo.body}</p></div><button aria-label="Cancel reply" className="grid size-7 place-items-center rounded-full text-stone-500 hover:bg-stone-200" onClick={() => setReplyingTo(null)} type="button">×</button></div>}
+          {(attachment || attachmentUploading || attachmentError) && <div className="flex shrink-0 items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 sm:px-5">{attachment?.type.startsWith("image/") && <Image alt="Attachment preview" className="size-12 rounded-lg object-cover" height={48} src={attachment.url} unoptimized width={48} />}<div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{attachmentUploading ? "Uploading…" : attachment?.name ?? "Upload failed"}</p><p className={`text-xs ${attachmentError ? "text-red-600" : "text-stone-400"}`}>{attachmentError || (attachment ? "Ready to send" : "")}</p></div><button aria-label="Remove attachment" className="grid size-7 place-items-center rounded-full text-stone-500 hover:bg-stone-200" onClick={() => { setAttachment(undefined); setAttachmentError(""); }} type="button">×</button></div>}
           <form className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
             {replyingTo && <input name="replyToId" type="hidden" value={replyingTo.id} />}
+            {attachment && <><input name="attachmentUrl" type="hidden" value={attachment.url} /><input name="attachmentName" type="hidden" value={attachment.name} /><input name="attachmentType" type="hidden" value={attachment.type} /><input name="attachmentSize" type="hidden" value={attachment.size} /></>}
             <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
               +
-              <input className="sr-only" onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) setDraft((current) => `${current}${current ? " " : ""}[${file.name}]`);
-                event.target.value = "";
-              }} type="file" />
+              <input className="sr-only" onChange={(event) => { void uploadAttachment(event.target.files?.[0]); event.target.value = ""; }} type="file" />
             </label>
             <label className="sr-only" htmlFor="message">Message {activeConversation.name}</label>
-            <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500" id="message" name="message" onChange={(event) => updateDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message" required rows={1} value={draft} />
-            <button aria-label="Send message" className="grid size-10 shrink-0 place-items-center rounded-lg bg-stone-900 text-lg text-white hover:bg-stone-700 disabled:cursor-default disabled:bg-stone-300" disabled={!draft.trim()} type="submit">→</button>
+            <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500" id="message" name="message" onChange={(event) => updateDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message" rows={1} value={draft} />
+            <button aria-label="Send message" className="grid size-10 shrink-0 place-items-center rounded-lg bg-stone-900 text-lg text-white hover:bg-stone-700 disabled:cursor-default disabled:bg-stone-300" disabled={attachmentUploading || (!draft.trim() && !attachment)} type="submit">→</button>
           </form>
         </section>
       </div>

@@ -61,6 +61,12 @@ export default async function Home() {
           ? conversation.members.some(({ userId, lastReadAt }) => userId !== currentUserId && lastReadAt && lastReadAt >= message.createdAt) ? "Read" as const : "Sent" as const
           : undefined,
         edited: Boolean(message.editedAt),
+        attachment: message.attachmentUrl ? {
+          url: message.attachmentUrl,
+          name: message.attachmentName ?? "Attachment",
+          type: message.attachmentType ?? "application/octet-stream",
+          size: message.attachmentSize ?? 0,
+        } : undefined,
         replyTo: message.replyTo && !message.replyTo.deletedAt ? {
           id: message.replyTo.id,
           body: message.replyTo.body,

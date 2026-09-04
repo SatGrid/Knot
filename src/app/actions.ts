@@ -20,10 +20,15 @@ export async function sendMessage(conversationId: string, formData: FormData) {
 
   const body = String(formData.get("message") ?? "").trim();
   const replyToId = String(formData.get("replyToId") ?? "").trim() || null;
+  const attachmentUrl = String(formData.get("attachmentUrl") ?? "").trim() || null;
+  const attachmentName = String(formData.get("attachmentName") ?? "").trim() || null;
+  const attachmentType = String(formData.get("attachmentType") ?? "").trim() || null;
+  const attachmentSize = Number(formData.get("attachmentSize") ?? 0) || null;
 
-  if (!body || body.length > 4000) {
-    throw new Error("A message must contain between 1 and 4,000 characters.");
+  if ((!body && !attachmentUrl) || body.length > 4000) {
+    throw new Error("Add a message or attachment before sending.");
   }
+  if (attachmentUrl && !attachmentUrl.startsWith("/uploads/")) throw new Error("Invalid attachment.");
 
   const membership = await prisma.conversationMember.findUnique({
     where: {
@@ -54,6 +59,10 @@ export async function sendMessage(conversationId: string, formData: FormData) {
         senderId: session.user.id,
         body,
         replyToId,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
+        attachmentSize,
       },
     });
     await tx.conversation.update({
