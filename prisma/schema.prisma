@@ -19,6 +19,7 @@ model User {
   username      String?              @unique
   displayName   String
   avatarUrl     String?
+  lastSeenAt    DateTime?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   memberships   ConversationMember[]

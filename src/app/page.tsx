@@ -16,6 +16,15 @@ function formatTime(date: Date) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(date);
 }
 
+function formatPresence(lastSeenAt?: Date | null) {
+  if (!lastSeenAt) return "Offline";
+  const seconds = Math.floor((Date.now() - lastSeenAt.getTime()) / 1000);
+  if (seconds < 60) return "Online";
+  if (seconds < 3600) return `Last seen ${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `Last seen ${Math.floor(seconds / 3600)}h ago`;
+  return `Last seen ${new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(lastSeenAt)}`;
+}
+
 export default async function Home() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
@@ -46,7 +55,8 @@ export default async function Home() {
     return {
       id: conversation.id,
       name,
-      status: conversation.isGroup ? `${conversation.members.length} members` : "Online",
+      status: conversation.isGroup ? `${conversation.members.length} members` : formatPresence(otherMember?.user.lastSeenAt),
+      participantId: otherMember?.userId ?? null,
       avatarUrl: otherMember?.user.avatarUrl ?? null,
       time: formatTime(conversation.updatedAt),
       archived: Boolean(archivedAt),
