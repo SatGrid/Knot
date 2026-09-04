@@ -4,6 +4,15 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { publishRealtimeUpdate } from "@/lib/realtime";
+
+async function notifyConversationMembers(conversationId: string) {
+  const members = await prisma.conversationMember.findMany({
+    where: { conversationId },
+    select: { userId: true },
+  });
+  publishRealtimeUpdate(members.map(({ userId }) => userId), { conversationId });
+}
 
 export async function sendMessage(conversationId: string, formData: FormData) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -45,6 +54,7 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   });
 
   revalidatePath("/");
+  await notifyConversationMembers(conversationId);
   return { id: message.id, body: message.body, createdAt: message.createdAt.toISOString() };
 }
 
@@ -56,6 +66,7 @@ export async function startConversationByEmail(email: string) {
   if (target.id === session.user.id) throw new Error("You cannot start a conversation with yourself.");
   const conversation = await prisma.conversation.create({ data: { members: { create: [{ userId: session.user.id }, { userId: target.id }] } } });
   revalidatePath("/");
+  publishRealtimeUpdate([session.user.id, target.id], { conversationId: conversation.id });
   return { id: conversation.id, name: target.displayName };
 }
 
@@ -86,6 +97,7 @@ export async function renameConversation(conversationId: string, title: string) 
   });
 
   revalidatePath("/");
+  await notifyConversationMembers(conversationId);
   return { title: cleanTitle };
 }
 
@@ -114,4 +126,5 @@ export async function updateConversationPreference(
   });
 
   revalidatePath("/");
+  await notifyConversationMembers(conversationId);
 }

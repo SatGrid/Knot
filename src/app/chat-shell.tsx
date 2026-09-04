@@ -68,11 +68,9 @@ export function ChatShell({
   );
 
   useEffect(() => {
-    const refresh = window.setInterval(() => {
-      if (document.visibilityState === "visible") router.refresh();
-    }, 3000);
-
-    return () => window.clearInterval(refresh);
+    const events = new EventSource("/api/events");
+    events.onmessage = () => router.refresh();
+    return () => events.close();
   }, [router]);
 
   const activeConversation = conversations.find(({ id }) => id === activeId) ?? conversations[0];
