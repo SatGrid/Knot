@@ -227,9 +227,9 @@ export function ChatShell({
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className={`truncate text-[14px] tracking-[-0.005em] ${unreadIds.includes(conversation.id) ? "font-bold text-slate-950" : "font-semibold"}`}>{conversation.name}</span>
-                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-stone-400">{mutedIds.includes(conversation.id) && <span className="text-[10px]" title="Muted">Muted</span>}{unreadIds.includes(conversation.id) && <span aria-label="Unread" className="size-2 rounded-full bg-blue-600" title="Unread" />}{conversation.time}</span>
+                      <span className="flex shrink-0 items-center gap-1.5 text-xs text-stone-400">{unreadIds.includes(conversation.id) && <span aria-label="Unread" className="size-2 rounded-full bg-blue-600" title="Unread" />}{conversation.time}</span>
                     </span>
-                    <span className={`mt-0.5 block truncate text-[13px] leading-5 ${unreadIds.includes(conversation.id) ? "font-semibold text-slate-800" : "font-normal text-stone-500"}`}>{lastMessage}</span>
+                    <span className="mt-0.5 flex min-w-0 items-center gap-2"><span className={`min-w-0 flex-1 truncate text-[13px] leading-5 ${unreadIds.includes(conversation.id) ? "font-semibold text-slate-800" : "font-normal text-stone-500"}`}>{lastMessage}</span>{mutedIds.includes(conversation.id) && <span className="shrink-0 rounded-full bg-slate-200 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-slate-600">Muted</span>}</span>
                   </span>
                 </button>
               );
