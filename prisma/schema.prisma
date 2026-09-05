@@ -101,6 +101,7 @@ model ConversationMember {
   lastReadAt     DateTime?
   mutedAt        DateTime?
   archivedAt     DateTime?
+  typingUntil    DateTime?
   conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 

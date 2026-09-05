@@ -274,6 +274,30 @@ export function ChatShell({
     void updateConversationPreference(activeConversation.id, "unread", false).then(() => router.refresh());
   }, [activeConversation?.id, activeConversation?.unread, router]);
 
+  useEffect(() => {
+    if (!activeConversation) return;
+    let cancelled = false;
+    const checkTyping = async () => {
+      try {
+        const response = await fetch(`/api/typing?conversationId=${encodeURIComponent(activeConversation.id)}`, { cache: "no-store" });
+        if (!response.ok || cancelled) return;
+        const result = await response.json() as { typing: boolean; userName?: string | null };
+        if (cancelled) return;
+        setTypingConversationId(result.typing ? activeConversation.id : null);
+        if (result.userName) setTypingName(result.userName);
+      } catch {
+        // Live events still provide typing state if a polling request is interrupted.
+      }
+    };
+    void checkTyping();
+    const interval = window.setInterval(() => void checkTyping(), 900);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [activeConversation]);
+
+  useEffect(() => {
+    if (typingConversationId === activeConversation?.id) messageEndRef.current?.scrollIntoView({ block: "end" });
+  }, [activeConversation?.id, typingConversationId]);
+
   function chooseConversation(id: string) {
     setActiveId(id);
     setSidebarOpen(false);
@@ -629,7 +653,7 @@ export function ChatShell({
                 <Avatar className="size-10 text-sm ring-1 ring-black/5" name={activeConversation.name} url={activeConversation.avatarUrl} />
                 <span>
                   <span className="block text-[15px] font-semibold leading-5 tracking-[-0.015em]">{activeConversation.name}</span>
-                  <span className="flex items-center gap-1.5 text-[11px] leading-4 text-stone-500"><span className={`size-1.5 rounded-full ${(presenceStatuses[activeConversation.id] ?? activeConversation.status) === "Online" ? "bg-emerald-500" : "bg-stone-300"}`} />{presenceStatuses[activeConversation.id] ?? activeConversation.status}</span>
+                  <span className={`flex items-center gap-1.5 text-[11px] leading-4 ${typingConversationId === activeConversation.id ? "font-medium text-emerald-600" : "text-stone-500"}`}><span className={`size-1.5 rounded-full ${typingConversationId === activeConversation.id || (presenceStatuses[activeConversation.id] ?? activeConversation.status) === "Online" ? "bg-emerald-500" : "bg-stone-300"}`} />{typingConversationId === activeConversation.id ? "typing…" : (presenceStatuses[activeConversation.id] ?? activeConversation.status)}</span>
                 </span>
               </button>
             </div>

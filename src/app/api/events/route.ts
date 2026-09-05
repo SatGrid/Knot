@@ -52,6 +52,10 @@ export async function POST(request: Request) {
   if (!conversationId) return new Response("Invalid request", { status: 400 });
   const members = await prisma.conversationMember.findMany({ where: { conversationId }, select: { userId: true } });
   if (!members.some(({ userId }) => userId === session.user.id)) return new Response("Forbidden", { status: 403 });
+  await prisma.conversationMember.update({
+    where: { conversationId_userId: { conversationId, userId: session.user.id } },
+    data: { typingUntil: isTyping ? new Date(Date.now() + 3000) : null },
+  });
   publishRealtimeUpdate(members.filter(({ userId }) => userId !== session.user.id).map(({ userId }) => userId), {
     type: "typing",
     conversationId,
