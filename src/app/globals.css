@@ -632,6 +632,23 @@ html.knot-dark .knot-intro,
   animation: knot-wordmark-in 420ms ease-out 820ms forwards;
 }
 
+.knot-image-viewer.is-profile .knot-image-stage {
+  flex: none !important;
+  width: min(86vw, 460px) !important;
+  height: min(68dvh, 520px);
+  margin-block: auto;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.16);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.knot-image-viewer.is-profile .knot-image-stage img {
+  padding: 0;
+  object-fit: contain;
+}
+
 @keyframes knot-link-left {
   from { opacity: 0; transform: translateX(-28px) rotate(-18deg) scale(0.72); }
   to { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
@@ -741,6 +758,12 @@ html.knot-dark .knot-intro,
     border-left: 0 !important;
     border-radius: 22px 22px 0 0 !important;
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .knot-image-viewer.is-profile .knot-image-stage {
+    width: min(88vw, 400px) !important;
+    height: min(62dvh, 460px);
+    border-radius: 18px !important;
   }
 }
 
