@@ -527,13 +527,10 @@ export function ChatShell({
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
         <aside className={`knot-sidebar absolute inset-y-0 left-0 z-20 flex w-[292px] flex-col border-r transition-all sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${sidebarCollapsed ? "sm:w-0 sm:overflow-hidden sm:border-r-0" : "sm:w-[292px]"}`}>
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
-            <div>
-              <h1 className="text-[17px] font-semibold tracking-[-0.01em]">Knot</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-[11px] leading-4 text-stone-400">Tying people together.</p>
-                <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
-              </div>
+          <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-stone-200 px-4">
+            <div className="flex items-center gap-2.5">
+              <span aria-hidden="true" className="knot-mark"><i /><i /></span>
+              <div><h1 className="text-[18px] font-semibold leading-5 tracking-[-0.025em]">Knot</h1><p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-stone-400">Messenger</p></div>
             </div>
             <div className="flex items-center gap-2"><button aria-label="Collapse conversations" className="hidden size-8 place-items-center rounded-md text-lg text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(true)} title="Hide sidebar" type="button">‹</button><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5 transition-colors" onClick={toggleTheme} title={`${darkMode ? "Light" : "Dark"} mode`} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : "translate-x-0"}`} /></button><button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button></div>
           </header>
@@ -575,10 +572,10 @@ export function ChatShell({
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
               {sidebarCollapsed && <button aria-label="Show conversations" className="hidden size-8 place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(false)} title="Show sidebar" type="button">›</button>}
-              <Avatar className="size-9 text-sm" name={activeConversation.name} url={activeConversation.avatarUrl} />
+              <Avatar className="size-10 text-sm ring-1 ring-black/5" name={activeConversation.name} url={activeConversation.avatarUrl} />
               <div>
-                <h2 className="text-[15px] font-semibold leading-5 tracking-[-0.005em]">{activeConversation.name}</h2>
-                <p className="text-[12px] leading-4 text-stone-500">{presenceStatuses[activeConversation.id] ?? activeConversation.status}</p>
+                <h2 className="text-[15px] font-semibold leading-5 tracking-[-0.015em]">{activeConversation.name}</h2>
+                <p className="flex items-center gap-1.5 text-[11px] leading-4 text-stone-500"><span className={`size-1.5 rounded-full ${(presenceStatuses[activeConversation.id] ?? activeConversation.status) === "Online" ? "bg-emerald-500" : "bg-stone-300"}`} />{presenceStatuses[activeConversation.id] ?? activeConversation.status}</p>
               </div>
             </div>
             <div className="flex items-center gap-1"><button className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition ${messageSearchOpen ? "bg-stone-100 text-stone-900" : "text-stone-500 hover:bg-stone-100 hover:text-stone-900"}`} onClick={() => { setMessageSearchOpen((open) => !open); setMessageSearch(""); }} type="button">Search</button><div className="relative"><button aria-label="Conversation options" className="px-2 text-xl text-stone-500" onClick={() => setMenuOpen((open) => !open)} type="button">···</button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-52 rounded-lg border border-slate-200 bg-white p-1 shadow-lg"><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleUnread()} type="button">{unreadIds.includes(activeConversation.id) ? "Mark read" : "Mark unread"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleMuted()} type="button">{mutedIds.includes(activeConversation.id) ? "Unmute chat" : "Mute chat"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleNotifications()} type="button">{notificationsEnabled ? "Disable desktop alerts" : "Enable desktop alerts"}</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={openRenameDialog} type="button">Rename conversation</button><button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void toggleArchived()} type="button">{archivedIds.includes(activeConversation.id) ? "Unarchive conversation" : "Archive conversation"}</button>{activeConversation.participantId && <button className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50" onClick={() => void blockContact()} type="button">{activeConversation.blocked ? "Unblock contact" : "Block contact"}</button>}<button className="w-full rounded-md px-3 py-2 text-left text-sm text-stone-500 hover:bg-slate-50" onClick={() => { setMenuOpen(false); setRemoveConversationOpen(true); }} type="button">Remove conversation</button></div>}</div></div>
@@ -606,14 +603,14 @@ export function ChatShell({
           <form className="knot-composer flex shrink-0 items-end gap-2 border-t p-3 sm:px-5 sm:py-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
             {replyingTo && <input name="replyToId" type="hidden" value={replyingTo.id} />}
             {attachment && <><input name="attachmentUrl" type="hidden" value={attachment.url} /><input name="attachmentName" type="hidden" value={attachment.name} /><input name="attachmentType" type="hidden" value={attachment.type} /><input name="attachmentSize" type="hidden" value={attachment.size} /></>}
-            <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
+            <label aria-label="Add attachment" className="knot-compose-action grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl text-xl text-stone-500">
               +
               <input className="sr-only" disabled={activeConversation.blocked} onChange={(event) => { void uploadAttachment(event.target.files?.[0]); event.target.value = ""; }} type="file" />
             </label>
             <label className="sr-only" htmlFor="message">Message {activeConversation.name}</label>
             <textarea className="max-h-32 min-h-10 flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm leading-6 outline-none placeholder:text-stone-400 focus:border-stone-500 disabled:bg-stone-100" disabled={activeConversation.blocked} id="message" name="message" onChange={(event) => updateDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message" rows={1} value={draft} />
-            <button aria-label={recording ? "Stop recording" : "Record voice note"} className={`h-10 shrink-0 rounded-lg px-2.5 text-xs font-medium ${recording ? "bg-stone-900 text-white" : "text-stone-500 hover:bg-stone-100"}`} disabled={activeConversation.blocked} onClick={() => void toggleRecording()} type="button">{recording ? "Stop" : "Voice"}</button>
-            <button aria-label="Send message" className="grid size-10 shrink-0 place-items-center rounded-lg bg-stone-900 text-lg text-white hover:bg-stone-700 disabled:cursor-default disabled:bg-stone-300" disabled={activeConversation.blocked || attachmentUploading || (!draft.trim() && !attachment)} type="submit">→</button>
+            <button aria-label={recording ? "Stop recording" : "Record voice note"} className={`knot-compose-action h-10 shrink-0 rounded-xl px-3 text-xs font-medium ${recording ? "is-recording bg-stone-900 text-white" : "text-stone-500"}`} disabled={activeConversation.blocked} onClick={() => void toggleRecording()} type="button">{recording ? "Stop" : "Voice"}</button>
+            <button aria-label="Send message" className="knot-send grid size-10 shrink-0 place-items-center rounded-xl bg-stone-900 text-lg text-white disabled:cursor-default disabled:bg-stone-300" disabled={activeConversation.blocked || attachmentUploading || (!draft.trim() && !attachment)} type="submit">→</button>
           </form>
         </section>
       </div>
