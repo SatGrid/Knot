@@ -213,6 +213,18 @@ export async function startConversationByEmail(email: string) {
   const target = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() }, select: { id: true, displayName: true } });
   if (!target) throw new Error("No Knot user found with that email.");
   if (target.id === session.user.id) throw new Error("You cannot start a conversation with yourself.");
+  const existingConversation = await prisma.conversation.findFirst({
+    where: {
+      isGroup: false,
+      AND: [
+        { members: { some: { userId: session.user.id } } },
+        { members: { some: { userId: target.id } } },
+        { members: { every: { userId: { in: [session.user.id, target.id] } } } },
+      ],
+    },
+    select: { id: true },
+  });
+  if (existingConversation) return { id: existingConversation.id, name: target.displayName };
   const conversation = await prisma.conversation.create({ data: { members: { create: [{ userId: session.user.id }, { userId: target.id }] } } });
   revalidatePath("/");
   publishRealtimeUpdate([session.user.id, target.id], { conversationId: conversation.id });

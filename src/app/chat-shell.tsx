@@ -100,6 +100,7 @@ export function ChatShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [newConversationEmail, setNewConversationEmail] = useState("");
+  const [newConversationError, setNewConversationError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [messageSearchOpen, setMessageSearchOpen] = useState(false);
   const [messageSearch, setMessageSearch] = useState("");
@@ -291,14 +292,16 @@ export function ChatShell({
   async function startConversation() {
     const email = newConversationEmail.trim();
     if (!email) return;
+    setNewConversationError("");
     try {
       const result = await startConversationByEmail(email);
       setActiveId(result.id);
       setNewConversationEmail("");
       setNewConversationOpen(false);
       router.refresh();
-    } catch {
+    } catch (error) {
       setNewConversationEmail(email);
+      setNewConversationError(error instanceof Error ? error.message : "Could not start this conversation.");
     }
   }
 
@@ -548,12 +551,12 @@ export function ChatShell({
 
   if (!activeConversation) {
     return (
-      <main className="grid h-dvh place-items-center bg-stone-100 px-4 text-stone-900">
-        <section className="w-full max-w-sm rounded-lg border border-stone-300 bg-white p-6 text-center">
-          <h1 className="text-lg font-semibold">Knot</h1>
-          <p className="mt-4 text-sm text-stone-500">You don&apos;t have any conversations yet.</p>
-          <button className="mt-5 text-sm font-medium underline underline-offset-2" onClick={signOut} type="button">Sign out</button>
-        </section>
+      <main className={`${darkMode ? "knot-dark" : ""} knot-app h-dvh overflow-hidden p-0 text-slate-900 sm:p-5`}>
+        <div className="knot-shell mx-auto grid h-full max-w-7xl overflow-hidden sm:grid-cols-[292px_1fr] sm:rounded-[22px]">
+          <aside className="knot-sidebar flex min-h-0 flex-col border-r"><header className="flex h-[68px] shrink-0 items-center justify-between border-b border-stone-200 px-4"><div className="flex items-center gap-2.5"><span aria-hidden="true" className="knot-mark"><i /><i /></span><div><h1 className="text-[18px] font-semibold leading-5 tracking-[-0.025em]">Knot</h1><p className="mt-0.5 text-[10px] text-stone-400">Tying people together.</p></div></div><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5" onClick={toggleTheme} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : ""}`} /></button></header><div className="flex flex-1 flex-col items-center justify-center px-6 text-center"><div className="grid size-11 place-items-center rounded-2xl bg-stone-100 text-xl">✦</div><p className="mt-3 text-sm font-semibold">Your inbox is ready</p><p className="mt-1 text-xs leading-5 text-stone-400">New conversations will appear here.</p></div><footer className="flex h-16 shrink-0 items-center gap-3 border-t border-stone-200 px-4"><button aria-label="Edit your profile" className="contents" onClick={() => setProfileOpen(true)} type="button"><Avatar className="size-8 bg-stone-900 text-xs text-white" name={currentUserName} url={currentUserAvatar} /><span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{currentUserName}</span></button><button className="text-xs text-stone-500" onClick={signOut} type="button">Sign out</button></footer></aside>
+          <section className="knot-chat flex min-h-0 flex-col bg-white"><header className="knot-chat-header flex h-[68px] shrink-0 items-center border-b px-6"><p className="text-sm font-medium text-stone-500">New conversation</p></header><div className="grid min-h-0 flex-1 place-items-center px-5"><div className="w-full max-w-md text-center"><div className="mx-auto grid size-16 place-items-center rounded-2xl bg-stone-900 text-2xl text-white">+</div><h2 className="mt-6 text-2xl font-semibold tracking-tight">Start your first conversation</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-stone-500">Search for someone using the email address they registered with on Knot.</p><form className="mt-7" onSubmit={(event) => { event.preventDefault(); void startConversation(); }}><label className="sr-only" htmlFor="first-contact-email">Knot user email</label><div className="flex rounded-2xl border border-stone-200 bg-stone-50 p-1.5 shadow-sm focus-within:border-stone-400"><input autoFocus className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-stone-400" id="first-contact-email" onChange={(event) => { setNewConversationEmail(event.target.value); setNewConversationError(""); }} placeholder="friend@gmail.com" type="email" value={newConversationEmail} /><button className="rounded-xl bg-stone-900 px-5 text-sm font-medium text-white disabled:bg-stone-300" disabled={!newConversationEmail.trim()} type="submit">Start chat</button></div>{newConversationError && <p className="mt-3 text-sm text-red-600">{newConversationError}</p>}</form></div></div>
+          </section>
+        </div>
       </main>
     );
   }
