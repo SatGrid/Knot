@@ -83,6 +83,13 @@ button {
   right: auto !important;
 }
 
+/* Keep quoted replies compact and readable instead of collapsing into tall squares. */
+[id^="message-"] .rounded-2xl > .border-l-2 {
+  min-width: 7rem;
+  margin-bottom: 0.3rem !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
 .knot-dark [id^="message-"] > div:last-child > button[aria-label="Message options"] {
   background: #22252b !important;
   color: #a8a29e !important;
