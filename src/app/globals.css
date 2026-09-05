@@ -4,9 +4,9 @@
   color-scheme: light;
   --knot-ink: #17181b;
   --knot-muted: #71747b;
-  --knot-canvas: #eceff3;
+  --knot-canvas: #e7eaf0;
   --knot-panel: #ffffff;
-  --knot-sidebar: #f7f8fa;
+  --knot-sidebar: #f4f5f7;
   --knot-line: rgba(24, 28, 36, 0.09);
   --knot-soft: #f1f2f4;
 }
@@ -55,13 +55,33 @@ button {
 .knot-shell {
   border: 1px solid var(--knot-line);
   background: var(--knot-panel);
-  box-shadow: 0 24px 70px rgba(32, 38, 48, 0.12), 0 2px 10px rgba(32, 38, 48, 0.04);
+  box-shadow: 0 30px 90px rgba(27, 31, 39, 0.14), 0 2px 12px rgba(27, 31, 39, 0.05);
   transition: grid-template-columns 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .knot-sidebar {
   border-color: var(--knot-line);
   background: var(--knot-sidebar);
+}
+
+.knot-sidebar > header {
+  height: 72px !important;
+  background: rgba(248, 249, 251, 0.86);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+.knot-sidebar > footer {
+  height: 68px !important;
+  background: rgba(248, 249, 251, 0.9);
+  backdrop-filter: blur(18px);
+}
+
+.knot-sidebar input[type="search"] {
+  height: 38px;
+  border-color: transparent !important;
+  border-radius: 12px;
+  background: #e9ebef;
+  box-shadow: inset 0 0 0 1px rgba(24, 28, 36, 0.04);
 }
 
 .knot-sidebar header,
@@ -107,7 +127,8 @@ button {
 }
 
 .knot-conversation {
-  transition: background-color 140ms ease, transform 140ms ease;
+  border: 1px solid transparent;
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
 .knot-conversation:hover {
@@ -115,7 +136,13 @@ button {
 }
 
 .knot-conversation.is-active {
-  background: #e9ebef !important;
+  border-color: rgba(24, 28, 36, 0.055);
+  background: #ffffff !important;
+  box-shadow: 0 5px 18px rgba(24, 28, 36, 0.07), 0 1px 2px rgba(24, 28, 36, 0.04);
+}
+
+.knot-conversation > span:first-child {
+  box-shadow: inset 0 0 0 1px rgba(24, 28, 36, 0.035);
 }
 
 .knot-chat {
@@ -123,19 +150,64 @@ button {
 }
 
 .knot-chat-header {
-  background: rgba(255, 255, 255, 0.86);
+  height: 72px !important;
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 1px 0 rgba(24, 28, 36, 0.025);
 }
 
 .knot-messages {
-  background: linear-gradient(180deg, #fbfbfc 0%, #ffffff 22%);
+  background: linear-gradient(180deg, #f8f9fb 0%, #fcfcfd 18%, #ffffff 58%);
   scrollbar-color: #c7c9ce transparent;
   scrollbar-width: thin;
+}
+
+.knot-messages > div {
+  gap: 0.7rem !important;
+}
+
+.knot-messages > div > p:first-child {
+  width: max-content;
+  margin-inline: auto;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(24, 28, 36, 0.055);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(24, 28, 36, 0.035);
 }
 
 .knot-messages [id^="message-"] .rounded-2xl {
   border: 1px solid rgba(24, 28, 36, 0.055);
   box-shadow: 0 1px 2px rgba(24, 28, 36, 0.04);
+}
+
+.knot-messages [id^="message-"] > div:first-child > div:first-child > .rounded-2xl {
+  min-height: 38px;
+  padding: 0.55rem 0.85rem !important;
+  border-radius: 17px !important;
+  background: #f0f1f3;
+  line-height: 1.42 !important;
+  box-shadow: 0 1px 2px rgba(24, 28, 36, 0.055), 0 3px 10px rgba(24, 28, 36, 0.025);
+}
+
+.knot-messages [id^="message-"]:not(.flex-row-reverse) > div:first-child > div:first-child > .rounded-2xl {
+  border-bottom-left-radius: 6px !important;
+}
+
+.knot-messages [id^="message-"].flex-row-reverse > div:first-child > div:first-child > .rounded-2xl {
+  border-bottom-right-radius: 6px !important;
+  background: linear-gradient(145deg, #25262a, #18191c) !important;
+  box-shadow: 0 3px 10px rgba(24, 28, 36, 0.14);
+}
+
+.knot-messages [id^="message-"] > div:first-child > p:last-child {
+  margin-top: 0.15rem !important;
+  padding-inline: 0.25rem !important;
+  font-size: 9px !important;
+  letter-spacing: 0.01em;
 }
 
 .knot-messages [id^="message-"].flex-row-reverse .rounded-2xl {
@@ -146,12 +218,13 @@ button {
 .knot-composer {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px) saturate(140%);
+  padding-block: 0.85rem !important;
 }
 
 .knot-composer textarea {
   border-color: transparent;
   border-radius: 14px;
-  background: #f1f2f4;
+  background: #eef0f3;
   box-shadow: inset 0 0 0 1px rgba(24, 28, 36, 0.055);
   transition: background-color 140ms ease, box-shadow 140ms ease;
 }
@@ -264,6 +337,26 @@ button {
 .knot-dark .knot-chat-header,
 .knot-dark .knot-composer {
   background: rgba(21, 22, 25, 0.88) !important;
+}
+
+.knot-dark .knot-sidebar > header,
+.knot-dark .knot-sidebar > footer {
+  background: rgba(17, 18, 21, 0.9);
+}
+
+.knot-dark .knot-sidebar input[type="search"] {
+  background: #202227;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.knot-dark .knot-conversation.is-active {
+  border-color: rgba(255, 255, 255, 0.075);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.knot-dark .knot-messages > div > p:first-child {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(34, 36, 42, 0.86);
 }
 
 .knot-dark .knot-messages {
