@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { deleteMessage, editMessage, forwardMessage, removeConversation, renameConversation, sendMessage, startConversationByEmail, toggleBlockUser, toggleMessagePin, toggleMessageReaction, updateConversationPreference, updateProfile } from "./actions";
 import { authClient } from "@/lib/auth-client";
+import { upload as uploadBlob } from "@vercel/blob/client";
 
 type MessageView = {
   id: string;
@@ -151,6 +152,7 @@ export function ChatShell({
   const [typingConversationId, setTypingConversationId] = useState<string | null>(null);
   const [typingName, setTypingName] = useState("");
   const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncSignature = useRef<string | null>(null);
   const remoteTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, startMessageTransition] = useTransition();
   const [conversations, applyOptimisticChange] = useOptimistic(
@@ -210,6 +212,27 @@ export function ChatShell({
     };
     return () => events.close();
   }, [router, notificationsEnabled]);
+
+  useEffect(() => {
+    let stopped = false;
+    let requestRunning = false;
+    const sync = async () => {
+      if (stopped || requestRunning || document.hidden) return;
+      requestRunning = true;
+      try {
+        const response = await fetch("/api/sync", { cache: "no-store" });
+        if (!response.ok || stopped) return;
+        const { signature } = await response.json() as { signature: string };
+        if (syncSignature.current && syncSignature.current !== signature) router.refresh();
+        syncSignature.current = signature;
+      } finally {
+        requestRunning = false;
+      }
+    };
+    void sync();
+    const interval = window.setInterval(() => void sync(), 2500);
+    return () => { stopped = true; window.clearInterval(interval); };
+  }, [router]);
 
   useEffect(() => {
     let requestRunning = false;
@@ -437,13 +460,19 @@ export function ChatShell({
     if (!file) return;
     setAttachmentUploading(true);
     setAttachmentError("");
-    const data = new FormData();
-    data.set("file", file);
     try {
-      const response = await fetch("/api/uploads", { method: "POST", body: data });
-      const result = await response.json() as MessageView["attachment"] & { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not upload that file.");
-      setAttachment({ url: result.url, name: result.name, type: result.type, size: result.size });
+      const capability = await fetch("/api/uploads", { cache: "no-store" }).then((response) => response.json()) as { cloud: boolean };
+      if (capability.cloud) {
+        const blob = await uploadBlob(`uploads/${file.name}`, file, { access: "public", handleUploadUrl: "/api/uploads", multipart: file.size > 10 * 1024 * 1024 });
+        setAttachment({ url: blob.url, name: file.name, type: file.type || "application/octet-stream", size: file.size });
+      } else {
+        const data = new FormData();
+        data.set("file", file);
+        const response = await fetch("/api/uploads", { method: "POST", body: data });
+        const result = await response.json() as MessageView["attachment"] & { error?: string };
+        if (!response.ok) throw new Error(result.error || "Could not upload that file.");
+        setAttachment({ url: result.url, name: result.name, type: result.type, size: result.size });
+      }
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : "Could not upload that file.");
     } finally {
