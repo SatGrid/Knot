@@ -638,10 +638,10 @@ html.knot-dark .knot-intro,
   height: min(68dvh, 520px);
   margin-block: auto;
   padding: 0 !important;
-  overflow: hidden;
-  border-radius: 24px;
-  background: rgba(0, 0, 0, 0.16);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .knot-image-viewer.is-profile .knot-image-stage img {
@@ -763,7 +763,7 @@ html.knot-dark .knot-intro,
   .knot-image-viewer.is-profile .knot-image-stage {
     width: min(88vw, 400px) !important;
     height: min(62dvh, 460px);
-    border-radius: 18px !important;
+    border-radius: 0 !important;
   }
 }
 
