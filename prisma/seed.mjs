@@ -11,10 +11,12 @@ const ids = {
   riya: "00000000-0000-4000-8000-000000000003",
   kabir: "00000000-0000-4000-8000-000000000004",
   neha: "00000000-0000-4000-8000-000000000005",
+  aarav: "00000000-0000-4000-8000-000000000006",
   conversation: "00000000-0000-4000-8000-000000000010",
   riyaConversation: "00000000-0000-4000-8000-000000000011",
   kabirConversation: "00000000-0000-4000-8000-000000000012",
   nehaConversation: "00000000-0000-4000-8000-000000000013",
+  aaravConversation: "00000000-0000-4000-8000-000000000014",
 };
 
 async function main() {
@@ -41,23 +43,25 @@ async function main() {
     `INSERT INTO "User" (id, email, username, "displayName", "createdAt", "updatedAt")
      VALUES ($1, 'riya@knot.local', 'riya', 'Riya', NOW(), NOW()),
             ($2, 'kabir@knot.local', 'kabir', 'Kabir', NOW(), NOW()),
-            ($3, 'neha@knot.local', 'neha', 'Neha', NOW(), NOW())
+            ($3, 'neha@knot.local', 'neha', 'Neha', NOW(), NOW()),
+            ($4, 'aarav@knot.local', 'aarav', 'Aarav', NOW(), NOW())
      ON CONFLICT (id) DO UPDATE
      SET email = EXCLUDED.email,
          username = EXCLUDED.username,
          "displayName" = EXCLUDED."displayName",
          "updatedAt" = NOW()`,
-    [ids.riya, ids.kabir, ids.neha],
+    [ids.riya, ids.kabir, ids.neha, ids.aarav],
   );
 
   await client.query(
     `INSERT INTO account (id, issuer, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
      VALUES (gen_random_uuid(), 'local:credential', $1::text, 'credential', $1::uuid, $3, NOW(), NOW()),
-            (gen_random_uuid(), 'local:credential', $2::text, 'credential', $2::uuid, $3, NOW(), NOW())
+            (gen_random_uuid(), 'local:credential', $2::text, 'credential', $2::uuid, $3, NOW(), NOW()),
+            (gen_random_uuid(), 'local:credential', $4::text, 'credential', $4::uuid, $3, NOW(), NOW())
      ON CONFLICT (issuer, "accountId") DO UPDATE
      SET password = EXCLUDED.password,
          "updatedAt" = NOW()`,
-    [ids.satyam, ids.riya, passwordHash],
+    [ids.satyam, ids.riya, passwordHash, ids.aarav],
   );
 
   await client.query(
@@ -113,6 +117,14 @@ async function main() {
       messages: [
         [ids.neha, "Can you share the notes from today?"],
         [ids.satyam, "Sure, I’ll send them after dinner."],
+      ],
+    },
+    {
+      conversationId: ids.aaravConversation,
+      userId: ids.aarav,
+      messages: [
+        [ids.aarav, "Hey Satyam, want to test the new chat features?"],
+        [ids.satyam, "Perfect timing. Let’s try them."],
       ],
     },
   ];
