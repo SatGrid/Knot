@@ -760,6 +760,19 @@ html.knot-dark .knot-intro,
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
   }
 
+  .knot-app > div.fixed:has(> .knot-profile-editor) {
+    align-items: center;
+    padding: 1rem !important;
+  }
+
+  .knot-app > div.fixed > .knot-profile-editor {
+    width: min(100%, 430px) !important;
+    max-height: calc(100dvh - 2rem);
+    border: 1px solid rgba(24, 28, 36, 0.08) !important;
+    border-radius: 20px !important;
+    padding: 1.25rem !important;
+  }
+
   .knot-image-viewer.is-profile .knot-image-stage {
     width: min(88vw, 400px) !important;
     height: min(62dvh, 460px);
