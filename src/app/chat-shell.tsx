@@ -522,11 +522,11 @@ export function ChatShell({
   }
 
   return (
-    <main className={`${darkMode ? "knot-dark" : ""} h-dvh overflow-hidden bg-slate-100 p-0 text-slate-900 sm:p-4`}>
-      <div className={`relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:rounded-2xl sm:border ${sidebarCollapsed ? "sm:grid-cols-[0px_1fr]" : "sm:grid-cols-[280px_1fr]"}`}>
+    <main className={`${darkMode ? "knot-dark" : ""} knot-app h-dvh overflow-hidden p-0 text-slate-900 sm:p-5`}>
+      <div className={`knot-shell relative mx-auto grid h-full max-w-7xl overflow-hidden sm:rounded-[22px] ${sidebarCollapsed ? "sm:grid-cols-[0px_1fr]" : "sm:grid-cols-[292px_1fr]"}`}>
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
-        <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-slate-200 bg-slate-50 transition-all sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${sidebarCollapsed ? "sm:w-0 sm:overflow-hidden sm:border-r-0" : "sm:w-[280px]"}`}>
+        <aside className={`knot-sidebar absolute inset-y-0 left-0 z-20 flex w-[292px] flex-col border-r transition-all sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${sidebarCollapsed ? "sm:w-0 sm:overflow-hidden sm:border-r-0" : "sm:w-[292px]"}`}>
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div>
               <h1 className="text-[17px] font-semibold tracking-[-0.01em]">Knot</h1>
@@ -549,7 +549,7 @@ export function ChatShell({
               const lastMessage = conversation.messages.at(-1)?.body ?? "No messages yet";
 
               return (
-                <button className={`flex w-full items-center gap-3 rounded-md px-3 py-3 text-left ${conversation.id === activeConversation.id ? "bg-stone-100" : "hover:bg-stone-50"}`} key={conversation.id} onClick={() => chooseConversation(conversation.id)} type="button">
+                <button className={`knot-conversation flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left ${conversation.id === activeConversation.id ? "is-active bg-stone-100" : "hover:bg-stone-50"}`} key={conversation.id} onClick={() => chooseConversation(conversation.id)} type="button">
                   <Avatar className="size-9 text-sm" name={conversation.name} url={conversation.avatarUrl} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
@@ -570,8 +570,8 @@ export function ChatShell({
           </footer>
         </aside>
 
-        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-white">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4 sm:px-5">
+        <section className="knot-chat flex min-h-0 min-w-0 flex-col overflow-hidden bg-white">
+          <header className="knot-chat-header flex h-[68px] shrink-0 items-center justify-between border-b px-4 sm:px-6">
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
               {sidebarCollapsed && <button aria-label="Show conversations" className="hidden size-8 place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(false)} title="Show sidebar" type="button">›</button>}
@@ -586,7 +586,7 @@ export function ChatShell({
 
           {messageSearchOpen && <div className="flex h-12 shrink-0 items-center gap-2 border-b border-stone-200 bg-stone-50 px-4 sm:px-5"><input autoFocus className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-stone-400" onChange={(event) => { setMessageSearch(event.target.value); setActiveMatch(0); }} placeholder="Search this conversation" type="search" value={messageSearch} /><span className="shrink-0 text-[11px] tabular-nums text-stone-400">{messageSearch.trim() ? messageMatches.length ? `${activeMatch + 1} of ${messageMatches.length}` : "No results" : ""}</span><button aria-label="Previous result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current - 1 + messageMatches.length) % messageMatches.length)} type="button">↑</button><button aria-label="Next result" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200 disabled:opacity-30" disabled={!messageMatches.length} onClick={() => setActiveMatch((current) => (current + 1) % messageMatches.length)} type="button">↓</button><button aria-label="Close search" className="grid size-7 place-items-center rounded-md text-stone-500 hover:bg-stone-200" onClick={() => { setMessageSearchOpen(false); setMessageSearch(""); setActiveMatch(0); }} type="button">×</button></div>}
 
-          <div aria-live="polite" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-6 sm:px-3">
+          <div aria-live="polite" className="knot-messages min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-7 sm:px-5">
             <div className="flex min-h-full flex-col justify-end gap-4">
               <p className="mb-2 text-center text-xs text-stone-400">Today</p>
               {activeConversation.messages.map((message) => (
@@ -603,7 +603,7 @@ export function ChatShell({
           {replyingTo && <div className="flex shrink-0 items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 sm:px-5"><div className="min-w-0 flex-1 border-l-2 border-stone-400 pl-3"><p className="text-xs font-semibold text-stone-700">Replying to {replyingTo.sender === "me" ? "yourself" : activeConversation.name}</p><p className="truncate text-xs text-stone-500">{replyingTo.body}</p></div><button aria-label="Cancel reply" className="grid size-7 place-items-center rounded-full text-stone-500 hover:bg-stone-200" onClick={() => setReplyingTo(null)} type="button">×</button></div>}
           {(attachment || attachmentUploading || attachmentError) && <div className="flex shrink-0 items-center gap-3 border-t border-stone-200 bg-stone-50 px-4 py-2.5 sm:px-5">{attachment?.type.startsWith("image/") && <Image alt="Attachment preview" className="size-12 rounded-lg object-cover" height={48} src={attachment.url} unoptimized width={48} />}<div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{attachmentUploading ? "Uploading…" : attachment?.name ?? "Upload failed"}</p><p className={`text-xs ${attachmentError ? "text-red-600" : "text-stone-400"}`}>{attachmentError || (attachment ? "Ready to send" : "")}</p></div><button aria-label="Remove attachment" className="grid size-7 place-items-center rounded-full text-stone-500 hover:bg-stone-200" onClick={() => { setAttachment(undefined); setAttachmentError(""); }} type="button">×</button></div>}
           {activeConversation.blocked && <div className="shrink-0 border-t border-stone-200 bg-stone-50 px-4 py-3 text-center text-xs text-stone-500">Messaging is unavailable because this contact is blocked.</div>}
-          <form className="flex shrink-0 items-end gap-2 border-t border-stone-200 p-3 sm:p-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
+          <form className="knot-composer flex shrink-0 items-end gap-2 border-t p-3 sm:px-5 sm:py-4" onSubmit={(event) => { event.preventDefault(); void submitMessage(new FormData(event.currentTarget)); }}>
             {replyingTo && <input name="replyToId" type="hidden" value={replyingTo.id} />}
             {attachment && <><input name="attachmentUrl" type="hidden" value={attachment.url} /><input name="attachmentName" type="hidden" value={attachment.name} /><input name="attachmentType" type="hidden" value={attachment.type} /><input name="attachmentSize" type="hidden" value={attachment.size} /></>}
             <label aria-label="Add attachment" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100">
