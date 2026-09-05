@@ -765,6 +765,37 @@ html.knot-dark .knot-intro,
   to { opacity: 0; transform: scale(1.025); visibility: hidden; }
 }
 
+@media (min-width: 640px) and (max-width: 1023px) {
+  .knot-app {
+    padding: 10px !important;
+  }
+
+  .knot-shell {
+    grid-template-columns: 256px minmax(0, 1fr) !important;
+    border-radius: 18px !important;
+  }
+
+  .knot-shell.is-sidebar-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) !important;
+  }
+
+  .knot-sidebar {
+    width: 256px !important;
+  }
+
+  .knot-shell.is-sidebar-collapsed .knot-sidebar {
+    width: 0 !important;
+  }
+
+  .knot-messages {
+    padding-inline: 1rem !important;
+  }
+
+  .knot-messages [id^="message-"] > div:first-child {
+    max-width: 82% !important;
+  }
+}
+
 @media (max-width: 639px) {
   .knot-shell {
     border: 0;
@@ -775,6 +806,61 @@ html.knot-dark .knot-intro,
   .knot-sidebar {
     width: min(88vw, 330px) !important;
     box-shadow: 18px 0 50px rgba(24, 28, 36, 0.16);
+  }
+
+  .knot-empty-shell {
+    display: grid;
+    grid-template-rows: 124px minmax(0, 1fr);
+  }
+
+  .knot-empty-shell > .knot-sidebar {
+    position: static;
+    display: grid;
+    width: 100% !important;
+    grid-template-rows: 64px 60px;
+    border-right: 0;
+    border-bottom: 1px solid var(--knot-line);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .knot-empty-shell > .knot-sidebar > header,
+  .knot-empty-shell > .knot-sidebar > footer {
+    height: auto !important;
+  }
+
+  .knot-empty-shell > .knot-sidebar > div {
+    display: none;
+  }
+
+  .knot-empty-shell > .knot-chat {
+    height: 100%;
+  }
+
+  .knot-empty-shell > .knot-chat > header {
+    display: none;
+  }
+
+  .knot-empty-shell > .knot-chat h2 {
+    font-size: 1.35rem;
+  }
+
+  .knot-empty-shell > .knot-chat form > div {
+    display: grid;
+    gap: 0.4rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .knot-empty-shell > .knot-chat form input {
+    border: 1px solid var(--knot-line);
+    border-radius: 13px;
+    background: var(--knot-soft);
+  }
+
+  .knot-empty-shell > .knot-chat form button {
+    height: 44px;
   }
 
   .knot-chat-header {
