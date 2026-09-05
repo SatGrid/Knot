@@ -530,7 +530,7 @@ export function ChatShell({
           <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div className="flex items-center gap-2.5">
               <span aria-hidden="true" className="knot-mark"><i /><i /></span>
-              <div><h1 className="text-[18px] font-semibold leading-5 tracking-[-0.025em]">Knot</h1><p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-stone-400">Messenger</p></div>
+              <div><h1 className="text-[18px] font-semibold leading-5 tracking-[-0.025em]">Knot</h1><p className="mt-0.5 whitespace-nowrap text-[10px] text-stone-400">Tying people together.</p></div>
             </div>
             <div className="flex items-center gap-2"><button aria-label="Collapse conversations" className="hidden size-8 place-items-center rounded-md text-lg text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(true)} title="Hide sidebar" type="button">‹</button><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5 transition-colors" onClick={toggleTheme} title={`${darkMode ? "Light" : "Dark"} mode`} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : "translate-x-0"}`} /></button><button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button></div>
           </header>
