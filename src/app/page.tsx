@@ -58,6 +58,8 @@ export default async function Home() {
       name,
       status: conversation.isGroup ? `${conversation.members.length} members` : formatPresence(otherMember?.user.lastSeenAt),
       participantId: otherMember?.userId ?? null,
+      username: otherMember?.user.username ?? null,
+      email: otherMember?.user.email ?? null,
       blocked: Boolean(otherMember && blocks.some(({ blockerId, blockedId }) => (blockerId === currentUserId && blockedId === otherMember.userId) || (blockedId === currentUserId && blockerId === otherMember.userId))),
       avatarUrl: otherMember?.user.avatarUrl ?? null,
       time: formatTime(conversation.updatedAt),
