@@ -83,6 +83,11 @@ button {
   right: auto !important;
 }
 
+/* Metadata such as "Edited · Read" must not pull a short sent bubble inward. */
+[id^="message-"].flex-row-reverse > div:first-child > div:first-child {
+  justify-content: flex-end;
+}
+
 /* Keep quoted replies compact and readable instead of collapsing into tall squares. */
 [id^="message-"] .rounded-2xl > .border-l-2 {
   min-width: 7rem;
