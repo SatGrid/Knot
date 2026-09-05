@@ -297,6 +297,12 @@ button {
   right: 0.35rem !important;
 }
 
+/* Bottom messages open their action menu upward so no options fall behind the composer. */
+[id^="message-"]:nth-last-child(-n + 4) > div:last-child > div.absolute {
+  top: auto !important;
+  bottom: 1.85rem !important;
+}
+
 /* Metadata such as "Edited · Read" must not pull a short sent bubble inward. */
 [id^="message-"].flex-row-reverse > div:first-child > div:first-child {
   justify-content: flex-end;
