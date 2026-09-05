@@ -88,6 +88,11 @@ button {
   justify-content: flex-end;
 }
 
+/* Received rows use a reversed inner flex; pin their bubble to the physical left edge. */
+[id^="message-"]:not(.flex-row-reverse) > div:first-child > div:first-child {
+  justify-content: flex-end;
+}
+
 /* Keep quoted replies compact and readable instead of collapsing into tall squares. */
 [id^="message-"] .rounded-2xl > .border-l-2 {
   min-width: 7rem;

@@ -61,6 +61,7 @@ export function ChatShell({
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [newConversationEmail, setNewConversationEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -522,10 +523,10 @@ export function ChatShell({
 
   return (
     <main className={`${darkMode ? "knot-dark" : ""} h-dvh overflow-hidden bg-slate-100 p-0 text-slate-900 sm:p-4`}>
-      <div className="relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:grid-cols-[280px_1fr] sm:rounded-2xl sm:border">
+      <div className={`relative mx-auto grid h-full max-w-6xl overflow-hidden border-slate-200 bg-slate-50 shadow-[0_18px_60px_rgba(15,23,42,0.08)] sm:rounded-2xl sm:border ${sidebarCollapsed ? "sm:grid-cols-[0px_1fr]" : "sm:grid-cols-[280px_1fr]"}`}>
         {sidebarOpen && <button aria-label="Close conversations" className="absolute inset-0 z-10 bg-black/20 sm:hidden" onClick={() => setSidebarOpen(false)} type="button" />}
 
-        <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-slate-200 bg-slate-50 transition-transform sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`absolute inset-y-0 left-0 z-20 flex w-[280px] flex-col border-r border-slate-200 bg-slate-50 transition-all sm:static sm:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} ${sidebarCollapsed ? "sm:w-0 sm:overflow-hidden sm:border-r-0" : "sm:w-[280px]"}`}>
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4">
             <div>
               <h1 className="text-[17px] font-semibold tracking-[-0.01em]">Knot</h1>
@@ -534,7 +535,7 @@ export function ChatShell({
                 <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">Demo</span>
               </div>
             </div>
-            <div className="flex items-center gap-2"><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5 transition-colors" onClick={toggleTheme} title={`${darkMode ? "Light" : "Dark"} mode`} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : "translate-x-0"}`} /></button><button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button></div>
+            <div className="flex items-center gap-2"><button aria-label="Collapse conversations" className="hidden size-8 place-items-center rounded-md text-lg text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(true)} title="Hide sidebar" type="button">‹</button><button aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`} aria-pressed={darkMode} className="relative h-6 w-11 rounded-full bg-stone-200 p-0.5 transition-colors" onClick={toggleTheme} title={`${darkMode ? "Light" : "Dark"} mode`} type="button"><span className={`knot-theme-thumb block size-5 rounded-full bg-white shadow-sm transition-transform ${darkMode ? "translate-x-5" : "translate-x-0"}`} /></button><button aria-label="Start a new conversation" className="grid size-8 place-items-center rounded-md border border-stone-300 text-xl leading-none hover:bg-stone-50" onClick={() => setNewConversationOpen(true)} type="button">+</button></div>
           </header>
 
           <div className="p-3">
@@ -573,6 +574,7 @@ export function ChatShell({
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 px-4 sm:px-5">
             <div className="flex items-center gap-3">
               <button aria-label="Open conversations" className="text-xl sm:hidden" onClick={() => setSidebarOpen(true)} type="button">≡</button>
+              {sidebarCollapsed && <button aria-label="Show conversations" className="hidden size-8 place-items-center rounded-md text-xl text-stone-500 hover:bg-stone-100 sm:grid" onClick={() => setSidebarCollapsed(false)} title="Show sidebar" type="button">›</button>}
               <Avatar className="size-9 text-sm" name={activeConversation.name} url={activeConversation.avatarUrl} />
               <div>
                 <h2 className="text-[15px] font-semibold leading-5 tracking-[-0.005em]">{activeConversation.name}</h2>
