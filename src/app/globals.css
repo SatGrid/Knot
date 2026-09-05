@@ -760,7 +760,8 @@ html.knot-dark .knot-intro,
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)) !important;
   }
 
-  .knot-app > div.fixed:has(> .knot-profile-editor) {
+  .knot-app > div.fixed:has(> .knot-profile-editor),
+  .knot-app > div.fixed:has(> .knot-contact-profile) {
     align-items: center;
     padding: 1rem !important;
   }
@@ -771,6 +772,14 @@ html.knot-dark .knot-intro,
     border: 1px solid rgba(24, 28, 36, 0.08) !important;
     border-radius: 20px !important;
     padding: 1.25rem !important;
+  }
+
+  .knot-app > div.fixed > .knot-contact-profile {
+    width: min(100%, 380px) !important;
+    max-height: calc(100dvh - 2rem);
+    border: 1px solid rgba(24, 28, 36, 0.08) !important;
+    border-radius: 24px !important;
+    padding-bottom: 0 !important;
   }
 
   .knot-image-viewer.is-profile .knot-image-stage {
