@@ -534,6 +534,89 @@ html.knot-dark body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
 }
 
+/* Profile surfaces */
+.knot-contact-profile,
+.knot-profile-editor {
+  border: 1px solid rgba(24, 28, 36, 0.075) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 28px 80px rgba(24, 28, 36, 0.2), 0 2px 8px rgba(24, 28, 36, 0.06) !important;
+}
+
+.knot-contact-profile > div:first-child {
+  background: linear-gradient(155deg, #f0f2f5 0%, #fafafb 54%, #ffffff 100%) !important;
+}
+
+.knot-contact-profile > div:last-child {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.knot-contact-profile [aria-label$="profile picture"],
+.knot-profile-editor [aria-label$="profile picture"] {
+  box-shadow: 0 10px 30px rgba(24, 28, 36, 0.14), 0 1px 3px rgba(24, 28, 36, 0.08);
+}
+
+.knot-profile-editor input {
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.knot-profile-editor input:focus {
+  box-shadow: 0 0 0 3px rgba(24, 28, 36, 0.045);
+}
+
+/* Menu geometry and grouping */
+.knot-conversation-menu {
+  width: 224px !important;
+  padding: 6px !important;
+}
+
+.knot-message-menu {
+  width: 164px !important;
+  padding: 6px !important;
+}
+
+.knot-conversation-menu button,
+.knot-message-menu button {
+  min-height: 36px !important;
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.knot-conversation-menu button:last-child,
+.knot-message-menu button:last-child {
+  margin-top: 4px;
+  border-top: 1px solid rgba(24, 28, 36, 0.07);
+  border-radius: 0 0 9px 9px !important;
+  color: #765a5a;
+}
+
+.knot-message-menu button:nth-last-child(2):not(:first-child) {
+  margin-top: 4px;
+}
+
+.knot-dark .knot-contact-profile,
+.knot-dark .knot-profile-editor {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #1b1d22 !important;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.52) !important;
+}
+
+.knot-dark .knot-contact-profile > div:first-child {
+  background: linear-gradient(155deg, #25282e 0%, #1d1f24 58%, #1b1d22 100%) !important;
+}
+
+.knot-dark .knot-contact-profile > div:last-child {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  background: #1b1d22;
+}
+
+.knot-dark .knot-conversation-menu button:last-child,
+.knot-dark .knot-message-menu button:last-child {
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: #c5a8a8 !important;
+}
+
 @keyframes knot-overlay-in {
   from { opacity: 0; }
   to { opacity: 1; }
